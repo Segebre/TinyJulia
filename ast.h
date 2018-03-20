@@ -9,10 +9,21 @@ using namespace std;
 
 extern vector<string> constant_data;
 
+enum{
+    TYPE_LITERAL
+};
+
 struct context{
     string code;
     string comment;
     bool printable; //True if comment should be shown
+};
+
+struct parameter_type{
+    int type;
+    union{
+        string* literal;
+    };
 };
 
 class AST{};
@@ -47,17 +58,17 @@ private:
 
 class PrintStatement : public Statement{
 public:
-    PrintStatement(string* params, bool isprintline){
+    PrintStatement(vector<struct parameter_type>* parameters, bool isprintline){
         this->print_id = constant_data.size();
         this->isprintline = isprintline;
-        this->params = *params;
+        this->parameters = *parameters;
         genConstantData();
     }
     string genCode();
 private:
     int print_id;
     bool isprintline;
-    string params;
+    vector<struct parameter_type> parameters;
     void genConstantData();
 };
 

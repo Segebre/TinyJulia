@@ -5,7 +5,13 @@ vector<string> constant_data;
 
 void PrintStatement::genConstantData(){
     stringstream data;
-    data << "print_placeholder_" << constant_data.size() <<  " db " << params << (isprintline?", 10":"") << ", 0";
+    data << "print_placeholder_" << constant_data.size() <<  " db ";
+    for(vector<struct parameter_type>::iterator parameter = parameters.begin(); parameter != parameters.end();){
+        data << *parameter->literal;
+        if(++parameter != parameters.end())
+            data << ", ";
+    }
+    data << (isprintline?", 10":"") << ", 0";
     constant_data.push_back(data.str());
 };
 
@@ -17,3 +23,5 @@ string PrintStatement::genCode(){
 
     return code.str();
 }
+
+//cambiar el extern
