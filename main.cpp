@@ -4,6 +4,7 @@
 
 extern FILE* yyin;
 extern int yyparse();
+extern vector<string> constant_data;
 extern Statement* code_tree;
 
 int main(int argc, char* argv[]){

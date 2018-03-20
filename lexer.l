@@ -8,17 +8,20 @@
     string literal;
 %}
 
+DIGIT [[:digit:]]
+
 %x literal_parsing
 
 %%
-"("         { return PARENTHESIS_LEFT; }
-")"         { return PARENTHESIS_RIGHT; }
-","         { return COMA; }
-";"         { return SEMICOLON; }
-"\n"        { return NEWLINE; }
-"print"     { return KW_PRINT; }
-"println"   { return KW_PRINTLN; }
-\"          { literal = "\""; BEGIN(literal_parsing); }
+"("             { return PARENTHESIS_LEFT; }
+")"             { return PARENTHESIS_RIGHT; }
+","             { return COMA; }
+";"             { return SEMICOLON; }
+"\n"            { return NEWLINE; }
+"print"         { return KW_PRINT; }
+"println"       { return KW_PRINTLN; }
+"-"?{DIGIT}+    { yylval.number = atoi(yytext); return NUMBER; }
+\"              { literal = "\""; BEGIN(literal_parsing); }
 
 <literal_parsing>\"         { literal += "\""; BEGIN(INITIAL); yylval.literal = &literal; return LITERAL; }
 <literal_parsing>\\\\       { literal += "\", 92, \""; }

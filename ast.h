@@ -7,10 +7,9 @@
 
 using namespace std;
 
-extern vector<string> constant_data;
-
 enum{
-    TYPE_LITERAL
+    TYPE_LITERAL,
+    TYPE_NUMBER
 };
 
 struct context{
@@ -23,6 +22,7 @@ struct parameter_type{
     int type;
     union{
         string* literal;
+        int number;
     };
 };
 
@@ -59,7 +59,6 @@ private:
 class PrintStatement : public Statement{
 public:
     PrintStatement(vector<struct parameter_type>* parameters, bool isprintline){
-        this->print_id = constant_data.size();
         this->isprintline = isprintline;
         this->parameters = *parameters;
         genConstantData();

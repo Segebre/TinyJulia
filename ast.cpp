@@ -4,10 +4,18 @@
 vector<string> constant_data;
 
 void PrintStatement::genConstantData(){
+    print_id = constant_data.size();
+    
     stringstream data;
-    data << "print_placeholder_" << constant_data.size() <<  " db ";
+    data << "print_placeholder_" << print_id <<  " db ";
     for(vector<struct parameter_type>::iterator parameter = parameters.begin(); parameter != parameters.end();){
-        data << *parameter->literal;
+        if(parameter->type == TYPE_LITERAL){
+            data << *parameter->literal;
+            delete parameter->literal;
+        }
+        else if(parameter->type == TYPE_NUMBER)
+            data << "\"" << parameter->number << "\"";
+
         if(++parameter != parameters.end())
             data << ", ";
     }
@@ -23,5 +31,3 @@ string PrintStatement::genCode(){
 
     return code.str();
 }
-
-//cambiar el extern
