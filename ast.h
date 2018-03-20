@@ -2,6 +2,7 @@
 #define AST_H
 
 #include <string>
+#include <sstream>
 #include <vector>
 
 using namespace std;
@@ -34,6 +35,14 @@ public:
 class Statement : public AST{
 public:
     virtual string genCode() = 0;
+};
+
+class StatementBlock : public Statement{
+public:
+    string genCode(){ stringstream code; for(Statement* statement : statements) code << statement->genCode() << endl; return code.str(); };
+    void addStatement(Statement* statement){ statements.push_back(statement); }
+private:
+    vector<Statement*> statements;
 };
 
 class PrintStatement : public Statement{

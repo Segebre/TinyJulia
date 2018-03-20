@@ -13,6 +13,8 @@
 %%
 "("         { return PARENTHESIS_LEFT; }
 ")"         { return PARENTHESIS_RIGHT; }
+";"         { return SEMICOLON; }
+"\n"         { return NEWLINE; }
 "print"     { return KW_PRINT; }
 "println"   { return KW_PRINTLN; }
 \"          { literal = "\""; BEGIN(literal_parsing); }
