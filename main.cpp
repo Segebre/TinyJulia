@@ -1,7 +1,6 @@
 
 #include <iostream>
 #include "ast.h"
-// #include "tokens.h"
 
 extern FILE* yyin;
 extern int yyparse();
@@ -9,7 +8,7 @@ extern Statement* code_tree;
 
 int main(int argc, char* argv[]){
     if(argc != 2){
-        cerr << "Err: Sould be: " << argv[0] << " <input_file.jl>" << endl;
+        cerr << "Err: Sould be: " << argv[0] << " <input_file.tjl>" << endl;
         exit(1);
     }
 

@@ -1,8 +1,9 @@
 .vscode/
 TinyJulia
-*.o
+*.tjl
 parser.cpp
 lexer.cpp
 tokens.h
+*.o
 run.asm
 run

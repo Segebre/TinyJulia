@@ -28,7 +28,9 @@
 %type<literal> params LITERAL
 
 %%
-print: KW_PRINT PARENTHESIS_LEFT params PARENTHESIS_RIGHT { code_tree = new PrintStatement($3); }
+print: KW_PRINT PARENTHESIS_LEFT params PARENTHESIS_RIGHT { code_tree = new PrintStatement($3, false); }
+    | KW_PRINTLN PARENTHESIS_LEFT params PARENTHESIS_RIGHT { code_tree = new PrintStatement($3, true); }
+    ;
 
 params: LITERAL { $$ = $1; }
 %%

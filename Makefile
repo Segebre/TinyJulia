@@ -13,7 +13,7 @@ lexer.cpp: lexer.l
 	flex -o $@ $^
 
 %.o:%.cpp
-	g++ -std=c++11 -g -c -o $@ $^
+	g++ -std=c++11 -c -g -o $@ $^
 
 clean:
 	rm -f $(TARGET)

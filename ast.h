@@ -14,9 +14,7 @@ struct context{
     bool printable; //True if comment should be shown
 };
 
-class AST{
-
-};
+class AST{};
 
 
 /////////////////
@@ -27,16 +25,6 @@ class Expression : public AST{
 public:
     virtual void genCode(struct context& context) = 0;
 };
-
-// class LiteralExpression : public Expression{
-// public:
-//     LiteralExpression(string literal){
-//         this->literal = literal;
-//     }
-//     void genCode(struct context& context);
-// private:
-//     string literal;
-// };
 
 
 ////////////////
@@ -50,14 +38,16 @@ public:
 
 class PrintStatement : public Statement{
 public:
-    PrintStatement(string* params){
+    PrintStatement(string* params, bool isprintline){
         this->print_id = constant_data.size();
+        this->isprintline = isprintline;
         this->params = *params;
         genConstantData();
     }
     string genCode();
 private:
     int print_id;
+    bool isprintline;
     string params;
     void genConstantData();
 };
