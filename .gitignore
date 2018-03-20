@@ -1,0 +1,8 @@
+.vscode/
+TinyJulia
+*.o
+parser.cpp
+lexer.cpp
+tokens.h
+run.asm
+run
