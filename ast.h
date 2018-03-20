@@ -9,7 +9,8 @@ using namespace std;
 
 enum{
     TYPE_LITERAL,
-    TYPE_NUMBER
+    TYPE_NUMBER,
+    TYPE_BOOLEAN
 };
 
 struct context{
@@ -23,6 +24,7 @@ struct parameter_type{
     union{
         string* literal;
         int number;
+        bool boolean;
     };
 };
 

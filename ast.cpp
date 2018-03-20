@@ -15,6 +15,11 @@ void PrintStatement::genConstantData(){
         }
         else if(parameter->type == TYPE_NUMBER)
             data << "\"" << parameter->number << "\"";
+        else if(parameter->type == TYPE_BOOLEAN)
+            if(parameter->boolean == true)
+                data << "\"true\"";
+            else if(parameter->boolean == false)
+                data << "\"false\"";
 
         if(++parameter != parameters.end())
             data << ", ";

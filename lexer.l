@@ -18,6 +18,8 @@ DIGIT [[:digit:]]
 ","             { return COMA; }
 ";"             { return SEMICOLON; }
 "\n"            { return NEWLINE; }
+"true"          { yylval.boolean = true; return BOOLEAN; }
+"false"         { yylval.boolean = false; return BOOLEAN; }
 "print"         { return KW_PRINT; }
 "println"       { return KW_PRINTLN; }
 "-"?{DIGIT}+    { yylval.number = atoi(yytext); return NUMBER; }

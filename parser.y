@@ -22,16 +22,18 @@
     vector<struct parameter_type>* print_params;
     string* literal;
     int number;
+    bool boolean;
 }
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
 %token KW_PRINT KW_PRINTLN
-%token LITERAL NUMBER
+%token LITERAL NUMBER BOOLEAN
 
 %type<statement>statement_list statement print
 %type<print_params> print_params
 %type<literal> LITERAL
 %type<number> NUMBER
+%type<boolean> BOOLEAN
 
 %%
 initial: statement_list { code_tree = $1; }
@@ -63,7 +65,9 @@ print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = new Print
 
 print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$4); $$->push_back(parameter);  }
     | print_params COMA optional_newlines NUMBER { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_NUMBER; parameter.number = $4; $$->push_back(parameter);  }
+    | print_params COMA optional_newlines BOOLEAN { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.boolean = $4; $$->push_back(parameter);  }
     | LITERAL { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); $$->push_back(parameter); }
     | NUMBER { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_NUMBER; parameter.number = $1; $$->push_back(parameter); }
+    | BOOLEAN { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.boolean = $1; $$->push_back(parameter); }
     ;
 %%
