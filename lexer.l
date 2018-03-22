@@ -22,7 +22,7 @@ DIGIT [[:digit:]]
 "false"         { yylval.boolean = false; return BOOLEAN; }
 "print"         { return KW_PRINT; }
 "println"       { return KW_PRINTLN; }
-"-"?{DIGIT}+    { yylval.number = atoi(yytext); return NUMBER; }
+"-"?{DIGIT}+    { yylval.integer = atoi(yytext); return INTEGER; }
 \"              { literal = "\""; BEGIN(literal_parsing); }
 
 <literal_parsing>\"         { literal += "\""; BEGIN(INITIAL); yylval.literal = &literal; return LITERAL; }

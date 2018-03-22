@@ -21,19 +21,19 @@
     Statement* statement;
     vector<struct parameter_type>* print_params;
     string* literal;
-    int number;
+    int integer;
     bool boolean;
 }
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
 %token KW_PRINT KW_PRINTLN
-%token LITERAL NUMBER BOOLEAN
+%token LITERAL INTEGER BOOLEAN
 
 %type<statement>statement_list statement print
 %type<print_params> print_params
 %type<literal> LITERAL
-%type<number> NUMBER
-%type<boolean> BOOLEAN
+%type<integer> INTEGER non_bool_integer //integer
+%type<boolean> BOOLEAN boolean
 
 %%
 initial: statement_list { code_tree = $1; }
@@ -64,10 +64,20 @@ print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = new Print
     ;
 
 print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$4); $$->push_back(parameter);  }
-    | print_params COMA optional_newlines NUMBER { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_NUMBER; parameter.number = $4; $$->push_back(parameter);  }
+    | print_params COMA optional_newlines INTEGER { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.integer = $4; $$->push_back(parameter);  }
     | print_params COMA optional_newlines BOOLEAN { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.boolean = $4; $$->push_back(parameter);  }
     | LITERAL { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); $$->push_back(parameter); }
-    | NUMBER { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_NUMBER; parameter.number = $1; $$->push_back(parameter); }
-    | BOOLEAN { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.boolean = $1; $$->push_back(parameter); }
+    | non_bool_integer { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.integer = $1; $$->push_back(parameter); }
+    | boolean { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.boolean = $1; $$->push_back(parameter); }
+    ;
+
+// integer: non_bool_integer { $$ = $1; }
+//     | boolean { $$ = $1; }
+//     ;
+
+non_bool_integer: INTEGER { $$ = $1; }
+    ;
+
+boolean: BOOLEAN { $$ = $1; }
     ;
 %%

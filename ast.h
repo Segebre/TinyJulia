@@ -9,7 +9,7 @@ using namespace std;
 
 enum{
     TYPE_LITERAL,
-    TYPE_NUMBER,
+    TYPE_INTEGER,
     TYPE_BOOLEAN
 };
 
@@ -23,7 +23,7 @@ struct parameter_type{
     int type;
     union{
         string* literal;
-        int number;
+        int integer;
         bool boolean;
     };
 };

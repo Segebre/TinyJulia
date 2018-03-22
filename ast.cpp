@@ -13,8 +13,8 @@ void PrintStatement::genConstantData(){
             data << *parameter->literal;
             delete parameter->literal;
         }
-        else if(parameter->type == TYPE_NUMBER)
-            data << "\"" << parameter->number << "\"";
+        else if(parameter->type == TYPE_INTEGER)
+            data << "\"" << parameter->integer << "\"";
         else if(parameter->type == TYPE_BOOLEAN)
             if(parameter->boolean == true)
                 data << "\"true\"";
