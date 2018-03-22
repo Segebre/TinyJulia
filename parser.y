@@ -36,7 +36,12 @@
 %type<boolean> BOOLEAN boolean
 
 %%
-initial: statement_list { code_tree = $1; }
+initial: optional_statement_separators statement_list optional_statement_separators { code_tree = $2; }
+    | optional_statement_separators { code_tree = new StatementBlock(); } //Set code_tree = NULL to create no code.
+    ;
+
+optional_statement_separators: statement_separator
+    |
     ;
 
 statement_separator: statement_separator NEWLINE
