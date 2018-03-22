@@ -12,6 +12,17 @@ void IntegerExpression::genCode(struct context& context){
     context.is_printable = true;
 }
 
+void BooleanExpression::genCode(struct context& context){
+    stringstream code;
+    code << "\tmov eax, " << this->boolean << endl
+         << "\tcall TinyJulia_interpret_bool" << endl
+         << "\tpush eax" << endl;
+
+    context.code = code.str();
+    context.comment = this->boolean?"true":"false";
+    context.is_printable = true;
+}
+
 void PrintStatement::genConstantData(){
     print_id = constant_data.size();
     
@@ -25,10 +36,7 @@ void PrintStatement::genConstantData(){
         else if(parameter->type == TYPE_INTEGER)
             data << "\"%d\"";
         else if(parameter->type == TYPE_BOOLEAN)
-            if(parameter->boolean == true)
-                data << "\"true\"";
-            else if(parameter->boolean == false)
-                data << "\"false\"";
+            data << "\"%s\"";
 
         if(++parameter != parameters.end())
             data << ", ";
@@ -44,17 +52,15 @@ string PrintStatement::genCode(){
         if(parameter->type == TYPE_LITERAL){
             continue;
         }
-        else if(parameter->type == TYPE_INTEGER){
+        else if(parameter->type == TYPE_INTEGER || parameter->type == TYPE_BOOLEAN){
             struct context context;
-            parameter->integer->genCode(context);
+            parameter->expression->genCode(context);
             code << context.code;
             if(context.is_printable)
                 code << " ; " << context.comment;
             code << endl;
             stackLeveling+=4;
         }
-        else if(parameter->type == TYPE_BOOLEAN)
-            continue;
     }
 
     code << "\tpush print_placeholder_" << print_id << endl

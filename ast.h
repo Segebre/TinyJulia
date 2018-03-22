@@ -29,6 +29,15 @@ private:
     int integer;
 };
 
+class BooleanExpression : public Expression{
+public:
+    BooleanExpression(bool boolean){
+        this->boolean = boolean;
+    }
+    void genCode(struct context& context);
+private:
+    int boolean;
+};
 
 ////////////////
 // Statements //
@@ -79,8 +88,7 @@ struct parameter_type{
     int type;
     union{
         string* literal;
-        Expression* integer;
-        bool boolean;
+        Expression* expression;
     };
 };
 

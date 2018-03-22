@@ -46,13 +46,12 @@ int main(int argc, char* argv[]){
          << "\tret" << endl
          << endl << endl << endl << ";----Tiny Julia Helper Code -----;" << endl
          << "TinyJulia_interpret_bool:" << endl
-         << "\tpop eax" << endl
          << "\tcmp eax, 0" << endl
          << "\tje TinyJulia_interpret_bool_set_false" << endl
-         << "\tpush print_placeholder_true" << endl
+         << "\tmov eax, print_placeholder_true" << endl
          << "\tret" << endl
          << "TinyJulia_interpret_bool_set_false:" << endl
-         << "\tpush print_placeholder_false" << endl
+         << "\tmov eax, print_placeholder_false" << endl
          << "\tret" << endl;
          
 
