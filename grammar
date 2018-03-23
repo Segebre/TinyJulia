@@ -1,0 +1,32 @@
+#=
+bool:
+BOOLEAN
+(bool)
+wildcard > final
+wildcard < final
+wildcard >= final
+wildcard <= final
+wildcard == final
+wildcard != final
+
+int:
+INT
+(int)
+wildcard + final
+wildcard - final
+wildcard * final
+wildcard / final
+wildcard % final
+wildcard ^ final
+
+wildcard:
+int
+bool
+ID
+
+final:
+ID
+INT
+BOOLEAN
+(wildcard)
+=#

@@ -21,6 +21,7 @@ DIGIT [[:digit:]]
 "=#"  { std::cerr << yylineno << ": Unpaired end of block comment" << std::endl; exit(1);  }
 "("                 { return PARENTHESIS_LEFT; }
 ")"                 { return PARENTHESIS_RIGHT; }
+"+"                 { return OPERATOR_ADD; }
 ","                 { return COMA; }
 ";"                 { return SEMICOLON; }
 "\n"                { return NEWLINE; }

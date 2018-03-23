@@ -19,6 +19,23 @@ public:
     virtual void genCode(struct context& context) = 0;
 };
 
+class BinaryExpression : public Expression{
+public:
+    BinaryExpression(Expression* left, Expression* right){
+        this->left = left;
+        this->right = right;
+    }
+protected:
+    Expression* left;
+    Expression* right;
+};
+
+class AddExpression : public BinaryExpression{
+public:
+    AddExpression(Expression* left, Expression* right) : BinaryExpression(left, right){}
+    void genCode(struct context& context);
+};
+
 class IntegerExpression : public Expression{
 public:
     IntegerExpression(int integer){

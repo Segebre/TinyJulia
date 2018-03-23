@@ -1,0 +1,181 @@
+#println((true | false) | 10 > 5)
+
+x = true
+println((3+1)<<false<<(3+1))
+
+
+
+#=
+bool:
+TRUE
+FALSE
+(bool)
+wildcard > final
+wildcard < final
+wildcard >= final
+wildcard <= final
+wildcard == final
+wildcard != final
+bool | TRUE
+bool | FALSE
+bool & TRUE
+bool & FALSE
+!bool
+~bool
+
+int:
+INT
+(int)
+wildcard + final
+wildcard - final
+wildcard * final
+wildcard / final
+wildcard % final
+wildcard ^ final
+bool | int
+bool & int
+int | bool
+int & bool
+~int
+
+shift:
+int
+shift << int
+shift >> int
+
+id:
+--mismo--
+~id
+id | ID   (bool si ambos bool)
+id & ID   (bool si ambos bool)
+bool | ID (bool si ambos bool)
+bool & ID (bool si ambos bool)
+id | bool (bool si ambos bool)
+id & bool (bool si ambos bool)
+
+--int--
+id | int
+id & int
+
+--bool--
+!id
+
+
+wildcard:
+int
+bool
+ID
+
+final:
+ID
+INT
+TRUE
+FALSE
+
+x | (x+4)
+x < y < z
+=#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#println((true | false) | 10 > 5)
+
+# x = true
+# println(x|1)
+
+
+
+#=
+bool:
+TRUE
+FALSE
+(bool)
+int > final
+int < final
+int >= final
+int <= final
+int == final
+int != final
+bool | TRUE
+bool | FALSE
+bool & TRUE
+bool & FALSE
+!bool
+~bool
+
+no_bool_int:
+INT
+(no_bool_int)
+int + final
+int - final
+int * final
+int / final
+int % final
+int ^ final
+int | no_bool_int
+int & no_bool_int
+no_bool_int | bool
+no_bool_int & bool
+int << final
+int >> final
+~no_bool_int
+
+id:
+--mismo--
+~id
+id | ID (bool si ambos bool)
+id & ID (bool si ambos bool)
+
+--int--
+id | no_bool_int
+id & no_bool_int
+# id<<int
+# id>>int
+
+--bool--
+!id
+id | bool
+id & bool
+
+
+int:
+no_bool_int:
+bool
+ID
+
+final:
+ID
+INT
+TRUE
+FALSE
+
+
+x < y < z
+=#

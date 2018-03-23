@@ -27,14 +27,15 @@
 }
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
+%token OPERATOR_ADD
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
 
-%type<statement>statement_list statement print
-%type<expression>non_bool_integer boolean
+%type<statement> statement_list statement print
+%type<expression> wildcard integer boolean final_value
 %type<print_params> print_params
 %type<literal> LITERAL
-%type<integer> INTEGER //integer
+%type<integer> INTEGER
 %type<boolean> BOOLEAN
 
 %%
@@ -71,20 +72,25 @@ print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = new Print
     ;
 
 print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$4); $$->push_back(parameter);  }
-    | print_params COMA optional_newlines non_bool_integer { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.expression = $4; $$->push_back(parameter);  }
+    | print_params COMA optional_newlines integer { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.expression = $4; $$->push_back(parameter);  }
     | print_params COMA optional_newlines boolean { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.expression = $4; $$->push_back(parameter);  }
     | LITERAL { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); $$->push_back(parameter); }
-    | non_bool_integer { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.expression = $1; $$->push_back(parameter); }
+    | integer { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.expression = $1; $$->push_back(parameter); }
     | boolean { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.expression = $1; $$->push_back(parameter); }
     ;
 
-// integer: non_bool_integer { $$ = $1; }
-//     | boolean { $$ = $1; }
-//     ;
+wildcard: integer { $$ = $1; }
+    | boolean { $$ = $1; }
+    ;
 
-non_bool_integer: INTEGER { $$ = new IntegerExpression($1); }
+integer: INTEGER { $$ = new IntegerExpression($1); }
+    | wildcard OPERATOR_ADD final_value { $$ = new AddExpression($1, $3); }
     ;
 
 boolean: BOOLEAN { $$ = new BooleanExpression($1); }
+    ;
+
+final_value: INTEGER { $$ = new IntegerExpression($1); }
+    | BOOLEAN { $$ = new BooleanExpression($1); }
     ;
 %%

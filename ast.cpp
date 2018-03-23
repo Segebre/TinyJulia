@@ -3,6 +3,26 @@
 
 vector<string> constant_data;
 
+void AddExpression::genCode(struct context& context){
+    struct context context_right;
+    struct context context_left;
+
+    left->genCode(context_left);
+    right->genCode(context_right);
+    
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tadd eax, ecx" << endl
+         << "\tpush eax";
+
+    context.code = code.str();
+    context.comment = "Addition result";
+    context.is_printable = false;
+}
+
 void IntegerExpression::genCode(struct context& context){
     stringstream code;
     code << "\tpush dword " << this->integer;
