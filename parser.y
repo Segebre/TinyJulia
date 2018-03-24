@@ -26,7 +26,7 @@
 }
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
-%token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD
+%token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
 
@@ -96,6 +96,7 @@ expression_ooo_l4: expression_ooo_l5
     ;
 
 expression_ooo_l5: expression_ooo_l6
+    | expression_ooo_l6 OPERATOR_POW expression_ooo_l5 { $$ = new PowExpression($1, $3); }
     ;
 
 expression_ooo_l6: final_value

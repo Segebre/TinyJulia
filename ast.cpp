@@ -106,6 +106,25 @@ void ModExpression::genCode(struct context& context){
     context.is_printable = false;
 }
 
+void PowExpression::genCode(struct context& context){
+    struct context context_left;
+    struct context context_right;
+
+    left->genCode(context_left);
+    right->genCode(context_right);
+
+    stringstream code;
+    code << context_right.code << endl
+         << context_left.code << endl
+         << "\tcall TinyJulia_exponenciation" << endl
+         << "\tadd esp, 8" << endl
+         << "\tpush eax" << " ; " << context_left.comment << " ^ " << context_right.comment << endl;
+    
+    context.code = code.str();
+    context.comment = "Exponentiation result";
+    context.is_printable = false;
+}
+
 void IntegerExpression::genCode(struct context& context){
     stringstream code;
     code << "\tpush dword " << this->integer;

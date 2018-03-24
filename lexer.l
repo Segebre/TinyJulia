@@ -26,6 +26,7 @@ DIGIT [[:digit:]]
 "*"                 { return OPERATOR_MUL; }
 "/"                 { return OPERATOR_DIV; }
 "%"                 { return OPERATOR_MOD; }
+"^"                 { return OPERATOR_POW; }
 ","                 { return COMA; }
 ";"                 { return SEMICOLON; }
 "\n"                { return NEWLINE; }

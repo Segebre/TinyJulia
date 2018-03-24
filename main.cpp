@@ -53,6 +53,22 @@ int main(int argc, char* argv[]){
          << "\tret" << endl
          << "TinyJulia_interpret_bool_set_false:" << endl
          << "\tmov eax, print_placeholder_false" << endl
+         << "\tret" << endl
+         << endl << endl
+         << "TinyJulia_exponenciation:" << endl
+         << "\tpush ebp" << endl
+         << "\tmov ebp, esp" << endl
+         << "\tmov ecx, [ebp+8]" << endl
+         << "\tmov eax, 1" << endl
+         << "\tcdq" << endl
+         << "TinyJulia_exponenciation_loop:" << endl
+         << "\tcmp dword [ebp+12], 0" << endl
+         << "\tjng TinyJulia_exponenciation_loop_end" << endl
+         << "\timul ecx" << endl
+         << "\tdec dword [ebp+12]" << endl
+         << "\tjmp TinyJulia_exponenciation_loop" << endl
+         << "TinyJulia_exponenciation_loop_end:" << endl
+         << "\tleave" << endl
          << "\tret" << endl;
          
 
