@@ -95,7 +95,8 @@ string PrintStatement::genCode(){
             parameter->expression->genCode(context);
             code << context.code;
             if(parameter->type == TYPE_BOOLEAN){
-                code << endl << "\tpop eax" << endl
+                code << endl 
+                     << "\tpop eax" << endl
                      << "\tcall TinyJulia_interpret_bool" << endl
                      << "\tpush eax" << endl;
             }
