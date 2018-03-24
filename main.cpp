@@ -69,6 +69,20 @@ int main(int argc, char* argv[]){
          << "\tjmp TinyJulia_exponenciation_loop" << endl
          << "TinyJulia_exponenciation_loop_end:" << endl
          << "\tleave" << endl
+         << "\tret" << endl
+         << endl << endl
+         << "TinyJulia_GT_comparison:" << endl
+         << "\tpush ebp" << endl
+         << "\tmov ebp, esp" << endl
+         << "\tmov eax, [ebp+12]" << endl
+         << "\tcmp eax, [ebp+8]" << endl
+         << "\tjle TinyJulia_GT_comparison_false" << endl
+         << "\tmov eax, 1" << endl
+         << "\tleave" << endl
+         << "\tret" << endl
+         << "TinyJulia_GT_comparison_false:" << endl
+         << "\tmov eax, 0" << endl
+         << "\tleave" << endl
          << "\tret" << endl;
          
 

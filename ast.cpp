@@ -3,6 +3,25 @@
 
 vector<string> constant_data;
 
+void GTExpression::genCode(struct context& context){
+    struct context context_right;
+    struct context context_left;
+
+    right->genCode(context_right);
+    left->genCode(context_left);
+    
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tcall TinyJulia_GT_comparison" << endl
+         << "\tadd esp, 8" << endl
+         << "\tpush eax";
+
+    context.code = code.str();
+    context.comment = "Addition result";
+    context.is_printable = false;
+}
+
 void AddExpression::genCode(struct context& context){
     struct context context_right;
     struct context context_left;
