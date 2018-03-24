@@ -20,7 +20,6 @@
 %union{
     Expression* expression;
     Statement* statement;
-    vector<struct parameter_type>* print_params;//quitar
     string* literal;
     int integer;
     bool boolean;
@@ -31,9 +30,8 @@
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
 
-%type<statement> statement_list statement print
+%type<statement> statement_list statement print print_params
 %type<expression> expression final_value
-%type<print_params> print_params//quitar
 %type<literal> LITERAL
 %type<integer> INTEGER
 %type<boolean> BOOLEAN
@@ -67,16 +65,14 @@ statement_list: statement_list statement_separator statement { $$ = $1; ((Statem
 
 statement: print { $$ = $1; };
 
-print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = new PrintStatement($3, false); }
-    | KW_PRINTLN PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = new PrintStatement($3, true); }
+print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }
+    | KW_PRINTLN PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(true); }
     ;
 
-print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$4); $$->push_back(parameter);  }
-    | print_params COMA optional_newlines integer { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.expression = $4; $$->push_back(parameter);  }
-    | print_params COMA optional_newlines boolean { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.expression = $4; $$->push_back(parameter);  }
-    | LITERAL { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); $$->push_back(parameter); }
-    | integer { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_INTEGER; parameter.expression = $1; $$->push_back(parameter); }
-    | boolean { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.expression = $1; $$->push_back(parameter); }
+print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$4); ((PrintStatement*)$$)->addParameter(parameter);  }
+    | print_params COMA optional_newlines final_value { $$ = $1; struct parameter_type parameter; parameter.type = $4->getType(); parameter.expression = $4; ((PrintStatement*)$$)->addParameter(parameter);  }
+    | LITERAL { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); ((PrintStatement*)$$)->addParameter(parameter); }
+    | final_value { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = $1->getType(); parameter.expression = $1; ((PrintStatement*)$$)->addParameter(parameter); }
     ;
 
 expression: final_value
@@ -86,8 +82,8 @@ expression: final_value
 
 final_value: PARENTHESIS_LEFT expression PARENTHESIS_RIGHT { $$ = $2; }
     | BOOLEAN { $$ = new BooleanExpression($1); }
-    | INTEGER { $$ = new IntegerExpression($1*); }
-    | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($1*); }
-    | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($1*-1); }
+    | INTEGER { $$ = new IntegerExpression($1); }
+    | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($2); }
+    | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($2*-1); }
     ;
 %%

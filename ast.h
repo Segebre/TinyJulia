@@ -7,6 +7,12 @@
 
 using namespace std;
 
+enum{
+    TYPE_LITERAL,
+    TYPE_INTEGER,
+    TYPE_BOOLEAN
+};
+
 class AST{};
 
 
@@ -17,6 +23,9 @@ class AST{};
 class Expression : public AST{
 public:
     virtual void genCode(struct context& context) = 0;
+    int getType(){ return this->type; }
+protected:
+    int type;
 };
 
 class BinaryExpression : public Expression{
@@ -32,13 +41,13 @@ protected:
 
 class AddExpression : public BinaryExpression{
 public:
-    AddExpression(Expression* left, Expression* right) : BinaryExpression(left, right){}
+    AddExpression(Expression* left, Expression* right) : BinaryExpression(left, right){ this->type = TYPE_INTEGER; }
     void genCode(struct context& context);
 };
 
 class SubExpression : public BinaryExpression{
 public:
-    SubExpression(Expression* left, Expression* right) : BinaryExpression(left, right){}
+    SubExpression(Expression* left, Expression* right) : BinaryExpression(left, right){ this->type = TYPE_INTEGER; }
     void genCode(struct context& context);
 };
 
@@ -46,6 +55,7 @@ class IntegerExpression : public Expression{
 public:
     IntegerExpression(int integer){
         this->integer = integer;
+        this->type = TYPE_INTEGER;
     }
     void genCode(struct context& context);
 private:
@@ -56,6 +66,7 @@ class BooleanExpression : public Expression{
 public:
     BooleanExpression(bool boolean){
         this->boolean = boolean;
+        this->type = TYPE_BOOLEAN;
     }
     void genCode(struct context& context);
 private:
@@ -69,23 +80,24 @@ private:
 class Statement : public AST{
 public:
     virtual string genCode() = 0;
+    virtual void secondpass() = 0;
 };
 
 class StatementBlock : public Statement{
 public:
     string genCode(){ stringstream code; for(Statement* statement : statements) code << statement->genCode() << endl; return code.str(); };
     void addStatement(Statement* statement){ statements.push_back(statement); }
+    void secondpass(){ for(Statement* statement : statements) statement->secondpass(); }
 private:
     vector<Statement*> statements;
 };
 
 class PrintStatement : public Statement{
 public:
-    PrintStatement(vector<struct parameter_type>* parameters, bool isprintline){
-        this->isprintline = isprintline;
-        this->parameters = *parameters;
-        genConstantData();
-    }
+    PrintStatement(){}
+    void secondpass(){ this->genConstantData(); }
+    void printline(bool isprintline){ this->isprintline = isprintline; }
+    void addParameter(struct parameter_type& parameter){ this->parameters.push_back(parameter); }
     string genCode();
 private:
     int print_id;
@@ -94,12 +106,6 @@ private:
     void genConstantData();
 };
 
-
-enum{
-    TYPE_LITERAL,
-    TYPE_INTEGER,
-    TYPE_BOOLEAN
-};
 
 struct context{
     string code;
