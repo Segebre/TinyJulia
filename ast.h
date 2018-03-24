@@ -64,7 +64,7 @@ private:
 
 class BooleanExpression : public Expression{
 public:
-    BooleanExpression(bool boolean){
+    BooleanExpression(int boolean){
         this->boolean = boolean;
         this->type = TYPE_BOOLEAN;
     }

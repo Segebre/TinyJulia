@@ -54,9 +54,7 @@ void IntegerExpression::genCode(struct context& context){
 
 void BooleanExpression::genCode(struct context& context){
     stringstream code;
-    code << "\tmov eax, " << this->boolean << endl
-         << "\tcall TinyJulia_interpret_bool" << endl
-         << "\tpush eax" << endl;
+    code << "\tpush dword " << this->boolean;
 
     context.code = code.str();
     context.comment = this->boolean?"true":"false";
@@ -96,6 +94,11 @@ string PrintStatement::genCode(){
             struct context context;
             parameter->expression->genCode(context);
             code << context.code;
+            if(parameter->type == TYPE_BOOLEAN){
+                code << endl << "\tpop eax" << endl
+                     << "\tcall TinyJulia_interpret_bool" << endl
+                     << "\tpush eax" << endl;
+            }
             if(context.is_printable)
                 code << " ; " << context.comment;
             code << endl;

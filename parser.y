@@ -70,9 +70,9 @@ print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((Pri
     ;
 
 print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$4); ((PrintStatement*)$$)->addParameter(parameter);  }
-    | print_params COMA optional_newlines final_value { $$ = $1; struct parameter_type parameter; parameter.type = $4->getType(); parameter.expression = $4; ((PrintStatement*)$$)->addParameter(parameter);  }
+    | print_params COMA optional_newlines expression { $$ = $1; struct parameter_type parameter; parameter.type = $4->getType(); parameter.expression = $4; ((PrintStatement*)$$)->addParameter(parameter);  }
     | LITERAL { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); ((PrintStatement*)$$)->addParameter(parameter); }
-    | final_value { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = $1->getType(); parameter.expression = $1; ((PrintStatement*)$$)->addParameter(parameter); }
+    | expression { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = $1->getType(); parameter.expression = $1; ((PrintStatement*)$$)->addParameter(parameter); }
     ;
 
 expression: final_value
@@ -82,6 +82,8 @@ expression: final_value
 
 final_value: PARENTHESIS_LEFT expression PARENTHESIS_RIGHT { $$ = $2; }
     | BOOLEAN { $$ = new BooleanExpression($1); }
+    | OPERATOR_ADD BOOLEAN { $$ = new IntegerExpression($2); }
+    | OPERATOR_SUB BOOLEAN { $$ = new IntegerExpression($2*-1); }
     | INTEGER { $$ = new IntegerExpression($1); }
     | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($2); }
     | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($2*-1); }
