@@ -26,12 +26,12 @@
 }
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
-%token OPERATOR_ADD OPERATOR_SUB
+%token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
 
 %type<statement> statement_list statement print print_params
-%type<expression> expression final_value
+%type<expression> expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
 %type<literal> LITERAL
 %type<integer> INTEGER
 %type<boolean> BOOLEAN
@@ -75,9 +75,30 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
     | expression { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = $1->getType(); parameter.expression = $1; ((PrintStatement*)$$)->addParameter(parameter); }
     ;
 
-expression: final_value
-    | expression OPERATOR_ADD final_value { $$ = new AddExpression($1, $3); }
-    | expression OPERATOR_SUB final_value { $$ = new SubExpression($1, $3); }
+expression: expression_ooo_l1
+    | expression OPERATOR_ADD expression_ooo_l1 { $$ = new AddExpression($1, $3); }
+    | expression OPERATOR_SUB expression_ooo_l1 { $$ = new SubExpression($1, $3); }
+    ;
+
+expression_ooo_l1: expression_ooo_l2
+    ;
+
+expression_ooo_l2: expression_ooo_l3
+    ;
+
+expression_ooo_l3: expression_ooo_l4
+    ;
+
+expression_ooo_l4: expression_ooo_l5
+    | expression_ooo_l4 OPERATOR_MUL expression_ooo_l5 { $$ = new MulExpression($1, $3); }
+    | expression_ooo_l4 OPERATOR_DIV expression_ooo_l5 { $$ = new DivExpression($1, $3); }
+    | expression_ooo_l4 OPERATOR_MOD expression_ooo_l5 { $$ = new ModExpression($1, $3); }
+    ;
+
+expression_ooo_l5: expression_ooo_l6
+    ;
+
+expression_ooo_l6: final_value
     ;
 
 final_value: PARENTHESIS_LEFT expression PARENTHESIS_RIGHT { $$ = $2; }

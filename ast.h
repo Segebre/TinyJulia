@@ -1,6 +1,14 @@
 #ifndef AST_H
 #define AST_H
 
+#define BINARYEXPRESSIONHELPER(name, valuetype)                                                                             \
+    class name##Expression : public BinaryExpression{                                                                       \
+    public:                                                                                                                 \
+        name##Expression(Expression* left, Expression* right) : BinaryExpression(left, right){ this->type = valuetype; }    \
+        void genCode(struct context& context);                                                                              \
+    };
+
+
 #include <string>
 #include <sstream>
 #include <vector>
@@ -39,17 +47,13 @@ protected:
     Expression* right;
 };
 
-class AddExpression : public BinaryExpression{
-public:
-    AddExpression(Expression* left, Expression* right) : BinaryExpression(left, right){ this->type = TYPE_INTEGER; }
-    void genCode(struct context& context);
-};
+BINARYEXPRESSIONHELPER(Add, TYPE_INTEGER);
+BINARYEXPRESSIONHELPER(Sub, TYPE_INTEGER);
+BINARYEXPRESSIONHELPER(Mul, TYPE_INTEGER);
+BINARYEXPRESSIONHELPER(Div, TYPE_INTEGER);
+BINARYEXPRESSIONHELPER(Mod, TYPE_INTEGER);
+BINARYEXPRESSIONHELPER(Pow, TYPE_INTEGER);
 
-class SubExpression : public BinaryExpression{
-public:
-    SubExpression(Expression* left, Expression* right) : BinaryExpression(left, right){ this->type = TYPE_INTEGER; }
-    void genCode(struct context& context);
-};
 
 class IntegerExpression : public Expression{
 public:

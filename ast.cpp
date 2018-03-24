@@ -7,8 +7,8 @@ void AddExpression::genCode(struct context& context){
     struct context context_right;
     struct context context_left;
 
-    left->genCode(context_left);
     right->genCode(context_right);
+    left->genCode(context_left);
     
     stringstream code;
     code << context_left.code << endl
@@ -24,8 +24,8 @@ void AddExpression::genCode(struct context& context){
 }
 
 void SubExpression::genCode(struct context& context){
-    struct context context_right;
     struct context context_left;
+    struct context context_right;
 
     left->genCode(context_left);
     right->genCode(context_right);
@@ -40,6 +40,69 @@ void SubExpression::genCode(struct context& context){
 
     context.code = code.str();
     context.comment = "Subtraction result";
+    context.is_printable = false;
+}
+
+void MulExpression::genCode(struct context& context){
+    struct context context_left;
+    struct context context_right;
+
+    left->genCode(context_left);
+    right->genCode(context_right);
+
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tcdq" << endl
+         << "\timul ecx" << " ; " << context_left.comment << " * " << context_right.comment << endl
+         << "\tpush eax";
+    
+    context.code = code.str();
+    context.comment = "Multiplication result";
+    context.is_printable = false;
+}
+
+void DivExpression::genCode(struct context& context){
+    struct context context_left;
+    struct context context_right;
+
+    left->genCode(context_left);
+    right->genCode(context_right);
+
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tcdq" << endl
+         << "\tidiv ecx" << " ; " << context_left.comment << " / " << context_right.comment << endl
+         << "\tpush eax";
+    
+    context.code = code.str();
+    context.comment = "Divition result";
+    context.is_printable = false;
+}
+
+void ModExpression::genCode(struct context& context){
+    struct context context_left;
+    struct context context_right;
+
+    left->genCode(context_left);
+    right->genCode(context_right);
+
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tcdq" << endl
+         << "\tidiv ecx" << " ; " << context_left.comment << " % " << context_right.comment << endl
+         << "\tpush edx";
+    
+    context.code = code.str();
+    context.comment = "Module result";
     context.is_printable = false;
 }
 

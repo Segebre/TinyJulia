@@ -23,6 +23,9 @@ DIGIT [[:digit:]]
 ")"                 { return PARENTHESIS_RIGHT; }
 "+"                 { return OPERATOR_ADD; }
 "-"                 { return OPERATOR_SUB; }
+"*"                 { return OPERATOR_MUL; }
+"/"                 { return OPERATOR_DIV; }
+"%"                 { return OPERATOR_MOD; }
 ","                 { return COMA; }
 ";"                 { return SEMICOLON; }
 "\n"                { return NEWLINE; }
