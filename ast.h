@@ -36,6 +36,12 @@ public:
     void genCode(struct context& context);
 };
 
+class SubExpression : public BinaryExpression{
+public:
+    SubExpression(Expression* left, Expression* right) : BinaryExpression(left, right){}
+    void genCode(struct context& context);
+};
+
 class IntegerExpression : public Expression{
 public:
     IntegerExpression(int integer){

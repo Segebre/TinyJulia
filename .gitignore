@@ -1,4 +1,5 @@
 .vscode/
+nonapplicable/
 TinyJulia
 *.tjl
 parser.cpp

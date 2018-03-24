@@ -20,20 +20,20 @@
 %union{
     Expression* expression;
     Statement* statement;
-    vector<struct parameter_type>* print_params;
+    vector<struct parameter_type>* print_params;//quitar
     string* literal;
     int integer;
     bool boolean;
 }
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
-%token OPERATOR_ADD
+%token OPERATOR_ADD OPERATOR_SUB
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
 
 %type<statement> statement_list statement print
-%type<expression> wildcard integer boolean final_value
-%type<print_params> print_params
+%type<expression> expression final_value
+%type<print_params> print_params//quitar
 %type<literal> LITERAL
 %type<integer> INTEGER
 %type<boolean> BOOLEAN
@@ -79,18 +79,15 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
     | boolean { $$ = new vector<struct parameter_type>; struct parameter_type parameter; parameter.type = TYPE_BOOLEAN; parameter.expression = $1; $$->push_back(parameter); }
     ;
 
-wildcard: integer { $$ = $1; }
-    | boolean { $$ = $1; }
+expression: final_value
+    | expression OPERATOR_ADD final_value { $$ = new AddExpression($1, $3); }
+    | expression OPERATOR_SUB final_value { $$ = new SubExpression($1, $3); }
     ;
 
-integer: INTEGER { $$ = new IntegerExpression($1); }
-    | wildcard OPERATOR_ADD final_value { $$ = new AddExpression($1, $3); }
-    ;
-
-boolean: BOOLEAN { $$ = new BooleanExpression($1); }
-    ;
-
-final_value: INTEGER { $$ = new IntegerExpression($1); }
+final_value: PARENTHESIS_LEFT expression PARENTHESIS_RIGHT { $$ = $2; }
     | BOOLEAN { $$ = new BooleanExpression($1); }
+    | INTEGER { $$ = new IntegerExpression($1*); }
+    | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($1*); }
+    | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($1*-1); }
     ;
 %%

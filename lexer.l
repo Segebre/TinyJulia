@@ -18,10 +18,11 @@ DIGIT [[:digit:]]
 "#"$                {  }
 "#"[^=\n][^\n]*     {  }
 "#="                { BEGIN(multiline_comment); }
-"=#"  { std::cerr << yylineno << ": Unpaired end of block comment" << std::endl; exit(1);  }
+"=#"                { std::cerr << yylineno << ": Unpaired end of block comment" << std::endl; exit(1);  }
 "("                 { return PARENTHESIS_LEFT; }
 ")"                 { return PARENTHESIS_RIGHT; }
 "+"                 { return OPERATOR_ADD; }
+"-"                 { return OPERATOR_SUB; }
 ","                 { return COMA; }
 ";"                 { return SEMICOLON; }
 "\n"                { return NEWLINE; }
@@ -29,7 +30,7 @@ DIGIT [[:digit:]]
 "false"             { yylval.boolean = false; return BOOLEAN; }
 "print"             { return KW_PRINT; }
 "println"           { return KW_PRINTLN; }
-"-"?{DIGIT}+        { yylval.integer = atoi(yytext); return INTEGER; }
+{DIGIT}+            { yylval.integer = atoi(yytext); return INTEGER; }
 \"                  { literal = "\""; BEGIN(literal_parsing); }
 .                   { std::cerr << yylineno << ": Unexpected `" << yytext << "`" << std::endl; exit(1); }
 

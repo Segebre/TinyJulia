@@ -1,32 +1,40 @@
-#=
-bool:
-BOOLEAN
-(bool)
-wildcard > final
-wildcard < final
-wildcard >= final
-wildcard <= final
-wildcard == final
-wildcard != final
+condition: expression
+    | condition > expression
+    | condition < expression
+    | condition == expression
+    | condition >= expression
+    | condition <= expression
+    | condition != expression
 
-int:
-INT
-(int)
-wildcard + final
-wildcard - final
-wildcard * final
-wildcard / final
-wildcard % final
-wildcard ^ final
 
-wildcard:
-int
-bool
-ID
+expression: expression_ooo_l1
+    | expression + expression_ooo_l1
+    | expression - expression_ooo_l1
 
-final:
-ID
-INT
-BOOLEAN
-(wildcard)
-=#
+expression_ooo_l1: expression_ooo_l2
+    | expression_ooo_l1 | expression_ooo_l2
+
+expression_ooo_l2: expression_ooo_l3
+    | expression_ooo_l2 << expression_ooo_l3
+    | expression_ooo_l2 >> expression_ooo_l3
+
+expression_ooo_l3: expression_ooo_l4 
+    | expression_ooo_l3 & expression_ooo_l4
+
+expression_ooo_l4: expression_ooo_l5
+    | expression_ooo_l4 * expression_ooo_l5
+    | expression_ooo_l4 / expression_ooo_l5
+    | expression_ooo_l4 % expression_ooo_l5
+
+expression_ooo_l5: expression_ooo_l6
+    | expression_ooo_l6 ^ expression_ooo_l5
+
+expression_ooo_l6: final
+    | !expression_ooo_l6
+    | ~expression_ooo_l6
+
+final: id
+    | bool
+    | +int
+    | -int
+    | (condition)
