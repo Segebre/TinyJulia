@@ -28,6 +28,11 @@ DIGIT [[:digit:]]
 "%"                 { return OPERATOR_MOD; }
 "^"                 { return OPERATOR_POW; }
 ">"                 { return COMPARISON_GT; }
+"<"                 { return COMPARISON_LT; }
+"=="                { return COMPARISON_EQ; }
+">="                { return COMPARISON_GE; }
+"<="                { return COMPARISON_LE; }
+"!="                { return COMPARISON_NE; }
 ","                 { return COMA; }
 ";"                 { return SEMICOLON; }
 "\n"                { return NEWLINE; }

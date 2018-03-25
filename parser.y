@@ -27,7 +27,7 @@
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
-%token COMPARISON_GT
+%token COMPARISON_GT COMPARISON_LT  COMPARISON_EQ  COMPARISON_GE COMPARISON_LE COMPARISON_NE
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
 
@@ -78,11 +78,11 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
 
 condition: expression { $$ = $1; }
     | condition COMPARISON_GT expression { $$ = new GTExpression($1, $3); }
-    // | condition < expression
-    // | condition == expression
-    // | condition >= expression
-    // | condition <= expression
-    // | condition != expression
+    | condition COMPARISON_LT expression { $$ = new LTExpression($1, $3); }
+    | condition COMPARISON_EQ expression { $$ = new EQExpression($1, $3); }
+    | condition COMPARISON_GE expression { $$ = new GEExpression($1, $3); }
+    | condition COMPARISON_LE expression { $$ = new LEExpression($1, $3); }
+    | condition COMPARISON_NE expression { $$ = new NEExpression($1, $3); }
     ;
 
 expression: expression_ooo_l1 { $$ = $1; }

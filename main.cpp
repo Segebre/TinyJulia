@@ -2,6 +2,22 @@
 #include <iostream>
 #include "ast.h"
 
+#define COMPARISON(name, function)                          \
+    cout << endl << endl                                    \
+         << "TinyJulia_" << #name << "_comparison:" << endl              \
+         << "\tpush ebp" << endl                            \
+         << "\tmov ebp, esp" << endl                        \
+         << "\tmov eax, [ebp+12]" << endl                   \
+         << "\tcmp eax, [ebp+8]" << endl                    \
+         << "\tj" << #function << " TinyJulia_" << #name << "_comparison_false" << endl   \
+         << "\tmov eax, 1" << endl                          \
+         << "\tleave" << endl                               \
+         << "\tret" << endl                                 \
+         << "TinyJulia_" << #name << "_comparison_false:" << endl        \
+         << "\tmov eax, 0" << endl                          \
+         << "\tleave" << endl                               \
+         << "\tret" << endl;
+
 extern FILE* yyin;
 extern int yyparse();
 extern vector<string> constant_data;
@@ -69,22 +85,13 @@ int main(int argc, char* argv[]){
          << "\tjmp TinyJulia_exponenciation_loop" << endl
          << "TinyJulia_exponenciation_loop_end:" << endl
          << "\tleave" << endl
-         << "\tret" << endl
-         << endl << endl
-         << "TinyJulia_GT_comparison:" << endl
-         << "\tpush ebp" << endl
-         << "\tmov ebp, esp" << endl
-         << "\tmov eax, [ebp+12]" << endl
-         << "\tcmp eax, [ebp+8]" << endl
-         << "\tjle TinyJulia_GT_comparison_false" << endl
-         << "\tmov eax, 1" << endl
-         << "\tleave" << endl
-         << "\tret" << endl
-         << "TinyJulia_GT_comparison_false:" << endl
-         << "\tmov eax, 0" << endl
-         << "\tleave" << endl
          << "\tret" << endl;
-         
+         COMPARISON(GT, le)
+         COMPARISON(LT, ge)
+         COMPARISON(EQ, ne)
+         COMPARISON(GE, l)
+         COMPARISON(LE, g)
+         COMPARISON(NE, e)
 
     return 0;
 }

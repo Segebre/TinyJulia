@@ -61,7 +61,6 @@ BINARYEXPRESSIONHELPER(GE, TYPE_BOOLEAN);
 BINARYEXPRESSIONHELPER(LE, TYPE_BOOLEAN);
 BINARYEXPRESSIONHELPER(NE, TYPE_BOOLEAN);
 
-
 class IntegerExpression : public Expression{
 public:
     IntegerExpression(int integer){
