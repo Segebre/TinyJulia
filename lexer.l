@@ -29,6 +29,8 @@ DIGIT [[:digit:]]
 "^"                 { return OPERATOR_POW; }
 "<<"                { return OPERATOR_SAL; }
 ">>"                { return OPERATOR_SAR; }
+"|"                 { return OPERATOR_OR; }
+"&"                 { return OPERATOR_AND; }
 ">"                 { return COMPARISON_GT; }
 "<"                 { return COMPARISON_LT; }
 "=="                { return COMPARISON_EQ; }

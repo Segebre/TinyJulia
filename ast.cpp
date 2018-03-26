@@ -24,6 +24,12 @@
 
 vector<string> constant_data;
 
+int helper_DeciferType(Expression* left, Expression* right){
+    if(left->getType() == TYPE_BOOLEAN && right->getType() == TYPE_BOOLEAN)
+        return TYPE_BOOLEAN;
+    return TYPE_INTEGER;
+}
+
 COMPARISON(GT)
 COMPARISON(LT)
 COMPARISON(EQ)
@@ -190,6 +196,46 @@ void SarExpression::genCode(struct context& context){
 
     context.code = code.str();
     context.comment = "Shift Arithmetic Right result";
+    context.is_printable = false;
+}
+
+void OrExpression::genCode(struct context& context){
+    struct context context_right;
+    struct context context_left;
+
+    right->genCode(context_right);
+    left->genCode(context_left);
+    
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tor eax, ecx" << endl
+         << "\tpush eax";
+
+    context.code = code.str();
+    context.comment = "Logical OR result";
+    context.is_printable = false;
+}
+
+void AndExpression::genCode(struct context& context){
+    struct context context_right;
+    struct context context_left;
+
+    right->genCode(context_right);
+    left->genCode(context_left);
+    
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tand eax, ecx" << endl
+         << "\tpush eax";
+
+    context.code = code.str();
+    context.comment = "Logical AND result";
     context.is_printable = false;
 }
 
