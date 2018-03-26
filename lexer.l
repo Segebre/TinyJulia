@@ -27,6 +27,8 @@ DIGIT [[:digit:]]
 "/"                 { return OPERATOR_DIV; }
 "%"                 { return OPERATOR_MOD; }
 "^"                 { return OPERATOR_POW; }
+"<<"                { return OPERATOR_SAL; }
+">>"                { return OPERATOR_SAR; }
 ">"                 { return COMPARISON_GT; }
 "<"                 { return COMPARISON_LT; }
 "=="                { return COMPARISON_EQ; }

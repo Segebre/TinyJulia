@@ -31,25 +31,6 @@ COMPARISON(GE)
 COMPARISON(LE)
 COMPARISON(NE)
 
-// void GTExpression::genCode(struct context& context){
-//     struct context context_right;
-//     struct context context_left;
-
-//     right->genCode(context_right);
-//     left->genCode(context_left);
-    
-//     stringstream code;
-//     code << context_left.code << endl
-//          << context_right.code << endl
-//          << "\tcall TinyJulia_GT_comparison" << endl
-//          << "\tadd esp, 8" << endl
-//          << "\tpush eax";
-
-//     context.code = code.str();
-//     context.comment = "Comparison result";
-//     context.is_printable = false;
-// }
-
 void AddExpression::genCode(struct context& context){
     struct context context_right;
     struct context context_left;
@@ -169,6 +150,46 @@ void PowExpression::genCode(struct context& context){
     
     context.code = code.str();
     context.comment = "Exponentiation result";
+    context.is_printable = false;
+}
+
+void SalExpression::genCode(struct context& context){
+    struct context context_right;
+    struct context context_left;
+
+    right->genCode(context_right);
+    left->genCode(context_left);
+    
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tsal eax, cl" << endl
+         << "\tpush eax";
+
+    context.code = code.str();
+    context.comment = "Shift Arithmetic Left result";
+    context.is_printable = false;
+}
+
+void SarExpression::genCode(struct context& context){
+    struct context context_right;
+    struct context context_left;
+
+    right->genCode(context_right);
+    left->genCode(context_left);
+    
+    stringstream code;
+    code << context_left.code << endl
+         << context_right.code << endl
+         << "\tpop ecx" << " ; " << (context_right.is_printable?context_right.comment:"") << endl
+         << "\tpop eax" << " ; " << (context_left.is_printable?context_left.comment:"") << endl
+         << "\tsar eax, cl" << endl
+         << "\tpush eax";
+
+    context.code = code.str();
+    context.comment = "Shift Arithmetic Right result";
     context.is_printable = false;
 }
 

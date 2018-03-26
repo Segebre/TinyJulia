@@ -27,6 +27,7 @@
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
+%token OPERATOR_SAL OPERATOR_SAR
 %token COMPARISON_GT COMPARISON_LT  COMPARISON_EQ  COMPARISON_GE COMPARISON_LE COMPARISON_NE
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
@@ -94,6 +95,8 @@ expression_ooo_l1: expression_ooo_l2 { $$ = $1; }
     ;
 
 expression_ooo_l2: expression_ooo_l3 { $$ = $1; }
+    | expression_ooo_l2 OPERATOR_SAL expression_ooo_l3 { $$ = new SalExpression($1, $3); }
+    | expression_ooo_l2 OPERATOR_SAR expression_ooo_l3 { $$ = new SarExpression($1, $3); }
     ;
 
 expression_ooo_l3: expression_ooo_l4 { $$ = $1; }
