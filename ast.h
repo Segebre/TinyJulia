@@ -67,6 +67,28 @@ BINARYEXPRESSIONHELPER(Sar, TYPE_INTEGER);
 BINARYEXPRESSIONHELPER(Or, helper_DeciferType(left, right));
 BINARYEXPRESSIONHELPER(And, helper_DeciferType(left, right));
 
+class NotExpression : public Expression{
+public:
+    NotExpression(Expression* value){
+        this->value = value;
+        this->type = value->getType();
+    }
+    void genCode(struct context& context);
+private:
+    Expression* value;
+};
+
+class NegExpression : public Expression{
+public:
+    NegExpression(Expression* value){
+        this->value = value;
+        this->type = TYPE_BOOLEAN;
+    }
+    void genCode(struct context& context);
+private:
+    Expression* value;
+};
+
 class IntegerExpression : public Expression{
 public:
     IntegerExpression(int integer){

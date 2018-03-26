@@ -62,7 +62,7 @@
 - ### Unary Operators
     - `!` : Negation of
  - ### Unary Operators Usage
-    - <Operator\> <Integer or Boolean Value\> : Returns result of operation
+    - <Operator\> <Boolean Value\> : Returns result of operation
  - ### Type
     - Any operation will result in a Boolean
 

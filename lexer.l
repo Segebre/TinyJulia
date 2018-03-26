@@ -31,12 +31,14 @@ DIGIT [[:digit:]]
 ">>"                { return OPERATOR_SAR; }
 "|"                 { return OPERATOR_OR; }
 "&"                 { return OPERATOR_AND; }
+"~"                 { return OPERATOR_NOT; }
 ">"                 { return COMPARISON_GT; }
 "<"                 { return COMPARISON_LT; }
 "=="                { return COMPARISON_EQ; }
 ">="                { return COMPARISON_GE; }
 "<="                { return COMPARISON_LE; }
 "!="                { return COMPARISON_NE; }
+"!"                 { return OPERATOR_NEG; }
 ","                 { return COMA; }
 ";"                 { return SEMICOLON; }
 "\n"                { return NEWLINE; }

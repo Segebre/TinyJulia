@@ -27,8 +27,8 @@
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
-%token OPERATOR_SAL OPERATOR_SAR OPERATOR_OR OPERATOR_AND
-%token COMPARISON_GT COMPARISON_LT  COMPARISON_EQ  COMPARISON_GE COMPARISON_LE COMPARISON_NE
+%token OPERATOR_SAL OPERATOR_SAR OPERATOR_OR OPERATOR_AND OPERATOR_NOT
+%token COMPARISON_GT COMPARISON_LT  COMPARISON_EQ  COMPARISON_GE COMPARISON_LE COMPARISON_NE OPERATOR_NEG
 %token KW_PRINT KW_PRINTLN
 %token LITERAL INTEGER BOOLEAN
 
@@ -115,6 +115,8 @@ expression_ooo_l5: expression_ooo_l6 { $$ = $1; }
     ;
 
 expression_ooo_l6: final_value { $$ = $1; }
+    | OPERATOR_NOT expression_ooo_l6 { if($2->getType() != TYPE_BOOLEAN) $$ = new NotExpression($2); else $$ = new NegExpression($2); }
+    | OPERATOR_NEG expression_ooo_l6 { if($2->getType() != TYPE_BOOLEAN) yyerror("Cannot negate non-boolean value!"); $$ = new NegExpression($2); }
     ;
 
 final_value: PARENTHESIS_LEFT condition PARENTHESIS_RIGHT { $$ = $2; }

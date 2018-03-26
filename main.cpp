@@ -85,6 +85,15 @@ int main(int argc, char* argv[]){
          << "\tjmp TinyJulia_exponenciation_loop" << endl
          << "TinyJulia_exponenciation_loop_end:" << endl
          << "\tleave" << endl
+         << "\tret" << endl
+         << endl << endl
+         << "TinyJulia_negate_value:" << endl
+         << "\tcmp eax, 0" << endl
+         << "\tjne TinyJulia_negate_value_true" << endl
+         << "\tmov eax, 1" << endl
+         << "\tret" << endl
+         << "TinyJulia_negate_value_true:" << endl
+         << "\tmov eax, 0" << endl
          << "\tret" << endl;
          COMPARISON(GT, le)
          COMPARISON(LT, ge)

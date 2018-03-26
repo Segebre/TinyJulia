@@ -2,7 +2,7 @@
 #include <sstream>
 
 #define COMPARISON(name)                                            \
-    void name##Expression::genCode(struct context& context){            \
+    void name##Expression::genCode(struct context& context){        \
     struct context context_right;                                   \
     struct context context_left;                                    \
                                                                     \
@@ -236,6 +236,32 @@ void AndExpression::genCode(struct context& context){
 
     context.code = code.str();
     context.comment = "Logical AND result";
+    context.is_printable = false;
+}
+
+void NotExpression::genCode(struct context& context){
+    value->genCode(context);
+    stringstream code;
+    code << context.code << endl
+         << "\tpop eax" << " ; " << (context.is_printable?context.comment:"") << endl
+         << "\nnot eax" << endl
+         << "\tpush eax";
+
+    context.code = code.str();
+    context.comment = "NOT result";
+    context.is_printable = false;
+}
+
+void NegExpression::genCode(struct context& context){
+    value->genCode(context);
+    stringstream code;
+    code << context.code << endl
+         << "\tpop eax" << " ; " << (context.is_printable?context.comment:"") << endl
+         << "\tcall TinyJulia_negate_value" << endl
+         << "\tpush eax" << endl;
+
+    context.code = code.str();
+    context.comment = "NEG result";
     context.is_printable = false;
 }
 
