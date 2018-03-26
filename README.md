@@ -5,22 +5,22 @@
     - Integer: a positive or negative whole number capable of being represented with 32 bits.
     - Booleans: the keywords `true` and `false` with their respective meaning.
 - ### Usage
-    - \<variable name 1\>`::Int`: Declares an int value.
-    - \<variable name 2\>`::Bool`: Declares an int value.
+    - <variable name 1\>`::Int`: Declares an int value.
+    - <variable name 2\>`::Bool`: Declares an int value.
 
-    - \<variable name 1\>`::Int = <Integer>`: Declares and initializes an integer value.
-    - \<variable name 2\>`::Bool = <Boolean>`: Declares and initializes an boolean value.
+    - <variable name 1\>`::Int = <Integer>`: Declares and initializes an integer value.
+    - <variable name 2\>`::Bool = <Boolean>`: Declares and initializes an boolean value.
 
-    - \<variable name 1\> : Gets the integer value.
-    - \<variable name 2\> : Gets the boolean value.
+    - <variable name 1\> : Gets the integer value.
+    - <variable name 2\> : Gets the boolean value.
     
-    - \<variable name 1\> `= <Integer>`: Sets the integer value.
-    - \<variable name 2\> `= <Integer>`: Sets the boolean value.
+    - <variable name 1\> `= <Integer>`: Sets the integer value.
+    - <variable name 2\> `= <Integer>`: Sets the boolean value.
 
 ## Comments
 - ### Variants
     - `#`: single line comment. Ends when reaching new line or end of file.
-    - `#=` \<comment\> `=#`: multiline comment. Comment between start symbol(`#=`) and end symbol (`=#`)
+    - `#=` <comment\> `=#`: multiline comment. Comment between start symbol(`#=`) and end symbol (`=#`)
 
 ## Printing
 - ### Instructions
@@ -45,7 +45,7 @@
     - `%` : Modularization
     - `^` : Exponentiation
  - ### Usage
-    - \<Integer or Boolean Value\> \<Operator\> \<Integer or Boolean Value\> : Returns result of operation
+    - <Integer or Boolean Value\> <Operator\> <Integer or Boolean Value\> : Returns result of operation
  - ### Type
     - Any operation will result in an Integer
 
@@ -58,11 +58,11 @@
     - `<=` : Less than or Equal to
     - `!=` : Not Equal to
  - ### Binary Operators Usage
-    - \<Integer or Boolean Value\> \<Operator\> \<Integer or Boolean Value\> : Returns result of operation
+    - <Integer or Boolean Value\> <Operator\> <Integer or Boolean Value\> : Returns result of operation
 - ### Unary Operators
     - `!` : Negation of
  - ### Unary Operators Usage
-    - \<Operator\> \<Integer or Boolean Value\> : Returns result of operation
+    - <Operator\> <Integer or Boolean Value\> : Returns result of operation
  - ### Type
     - Any operation will result in a Boolean
 
@@ -74,7 +74,7 @@
     - `<<` : Arithmetic Shift Left 
     - `>>` : Arithmetic Shift Right
  - ### Usage
-    - \<Integer or Boolean Value\> \<Operator\> \<Integer or Boolean Value\> : Returns result of operation
+    - <Integer or Boolean Value\> <Operator\> <Integer or Boolean Value\> : Returns result of operation
  - ### Type
     - Any operation will result in a Boolean
 
