@@ -5,17 +5,17 @@
     - Integer: a positive or negative whole number capable of being represented with 32 bits.
     - Booleans: the keywords `true` and `false` with their respective meaning.
 - ### Usage
-    - <variable name 1\>`::Int`: Declares an int value.
-    - <variable name 2\>`::Bool`: Declares an int value.
+    - <variable name 1\>`::Int`: Declares an Integer value.
+    - <variable name 2\>`::Bool`: Declares a Boolean value.
 
-    - <variable name 1\>`::Int = <Integer>`: Declares and initializes an integer value.
-    - <variable name 2\>`::Bool = <Boolean>`: Declares and initializes an boolean value.
+    - <variable name 1\>`::Int =` <Integer or Boolean\>: Declares and initializes an Integer value.
+    - <variable name 2\>`::Bool =` <Boolean\>: Declares and initializes an Boolean value.
 
-    - <variable name 1\> : Gets the integer value.
-    - <variable name 2\> : Gets the boolean value.
+    - <variable name 1\> : Gets the Integer value.
+    - <variable name 2\> : Gets the Boolean value.
     
-    - <variable name 1\> `= <Integer>`: Sets the integer value.
-    - <variable name 2\> `= <Integer>`: Sets the boolean value.
+    - <variable name 1\> `=` <Integer or Boolean\>: Sets the Integer value.
+    - <variable name 2\> `=` <Boolean\>: Sets the Boolean value.
 
 ## Comments
 - ### Variants
@@ -29,10 +29,10 @@
 - ### Parameters (separaed by comas)
     - Literal: a string literal encapsulated by double quoutes, may contain escape characters. For example:  `"Hello World!"`.
         - #### Escape characters:
-            - `\\`
-            - `\"`
-            - `\t`
-            - `\n`
+            - `\\` : Adds a `\` to the string
+            - `\"` : Adds a `"` to the string
+            - `\t` : Adds a tabulation to the string
+            - `\n` : Adds a new line to the string
     - Integers: any expression resulting in an integer.
     - Booleans: any expression resulting in a boolean.
 
@@ -67,14 +67,21 @@
     - Any operation will result in a Boolean
 
 ## Bitwise Operations
-- ### Operators
+- ### Binary Operators
     - `|` : OR
     - `&` : AND
-    - `~` : NOT
     - `<<` : Arithmetic Shift Left 
     - `>>` : Arithmetic Shift Right
- - ### Usage
+ - ### Binary Operators Usage
     - <Integer or Boolean Value\> <Operator\> <Integer or Boolean Value\> : Returns result of operation
+ - ### Uniary Operators
+    - `~` : NOT
+ - ### Uniary Operators Usage
+    - <Operator\> <Integer or Boolean Value\> : Returns the `false` if true and `true` if false.
  - ### Type
-    - Any operation will result in a Boolean
+    - `|` : Boolean if both values are boolean, else Integer
+    - `&` : Boolean if both values are boolean, else Integer
+    - `<<` : Integer
+    - `>>` : Integer
+    - `~` : Boolean if value is boolean, else Integer
 
