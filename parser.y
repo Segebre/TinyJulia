@@ -127,15 +127,19 @@ expression_ooo_l5: expression_ooo_l6 { $$ = $1; }
 expression_ooo_l6: final_value { $$ = $1; }
     | OPERATOR_NOT expression_ooo_l6 { if($2->getType() != TYPE_BOOLEAN) $$ = new NotExpression($2); else $$ = new NegExpression($2); }
     | OPERATOR_NEG expression_ooo_l6 { if($2->getType() != TYPE_BOOLEAN) yyerror("Cannot negate non-boolean value!"); $$ = new NegExpression($2); }
+    | OPERATOR_ADD expression_ooo_l6 { $$ = $2; }
+    | OPERATOR_SUB expression_ooo_l6 { $$ = new MulExpression(new IntegerExpression(-1), $2); }
     ;
 
 final_value: PARENTHESIS_LEFT condition PARENTHESIS_RIGHT { $$ = $2; }
     | BOOLEAN { $$ = new BooleanExpression($1); }
-    | OPERATOR_ADD BOOLEAN { $$ = new IntegerExpression($2); }
-    | OPERATOR_SUB BOOLEAN { $$ = new IntegerExpression($2*-1); }
+    // | OPERATOR_ADD BOOLEAN { $$ = new IntegerExpression($2); }
+    // | OPERATOR_SUB BOOLEAN { $$ = new IntegerExpression($2*-1); }
     | INTEGER { $$ = new IntegerExpression($1); }
-    | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($2); }
-    | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($2*-1); }
-    | IDENTIFIER { $$ = new IdExpression(*$1); }
+    // | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($2); }
+    // | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($2*-1); }
+    | IDENTIFIER { $$ = new IdentifierExpression(*$1); }
+    // | OPERATOR_ADD IDENTIFIER { $$ = new IdentifierExpression(*$2); }
+    // | OPERATOR_SUB IDENTIFIER { $$ = new MulExpression(new IdentifierExpression(*$2), new IntegerExpression(-1)); }
     ;
 %%

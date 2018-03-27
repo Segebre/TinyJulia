@@ -115,9 +115,9 @@ private:
     int boolean;
 };
 
-class IdExpression : public Expression{
+class IdentifierExpression : public Expression{
 public:
-    IdExpression(string name){
+    IdentifierExpression(string name){
         this->type = helper_UseVariable(name);
         this->name = name;
     }

@@ -339,7 +339,7 @@ void BooleanExpression::genCode(struct context& context){
     context.is_printable = true;
 }
 
-void IdExpression::genCode(struct context& context){
+void IdentifierExpression::genCode(struct context& context){
     stringstream code;
     code << "\tpush dword [ebp" << (symbol_table[name].position >= 0?"+":"") << symbol_table[name].position << "]";
 
