@@ -1,5 +1,7 @@
 #include "ast.h"
 #include <sstream>
+#include <map>
+#include <iostream>
 
 #define COMPARISON(name)                                            \
     void name##Expression::genCode(struct context& context){        \
@@ -22,7 +24,61 @@
     context.is_printable = false;                                   \
 }
 
+struct symbol{
+    int type;
+    int position;
+    int size;
+};
+
 vector<string> constant_data;
+map<string, struct symbol> symbol_table;
+static int next_available = -4;
+
+void helper_DeclareVariable(string name, int type, int size){
+    if(symbol_table.count(name)){
+        std::cerr << "Variable redeclaration not allowed!" << std::endl;
+        exit(1);
+    }
+    struct symbol symbol;
+    symbol.type = type;
+    symbol.position = next_available;
+    symbol.size = size;
+    next_available -= size*4;
+    symbol_table[name] = symbol;
+}
+
+void helper_SetVariable(string name, int type, int position){
+    if(!symbol_table.count(name)){
+        std::cerr << "Variable first use cannot be before its declaration!" << std::endl;
+        exit(1);
+    }
+    if(position < 1 || position > symbol_table[name].size){
+        std::cerr << "Index out of bound exception!" << std::endl;
+        exit(1);
+    }
+    else if(symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+        std::cerr << "Incompatible types!" << std::endl;
+        exit(1);
+    }
+}
+
+int helper_UseVariable(string name){
+    if(!symbol_table.count(name)){
+        std::cerr << "Variable first use cannot be before its declaration!" << std::endl;
+        exit(1);
+    }
+    return symbol_table[name].type;
+}
+
+bool helper_isArray(string name){
+    if(!symbol_table.count(name)){
+        std::cerr << "Variable first use cannot be before its declaration!" << std::endl;
+        exit(1);
+    }
+    if(symbol_table[name].size > 1)
+        return true;
+    return false;
+}
 
 int helper_DeciferType(Expression* left, Expression* right){
     if(left->getType() == TYPE_BOOLEAN && right->getType() == TYPE_BOOLEAN)
@@ -283,6 +339,15 @@ void BooleanExpression::genCode(struct context& context){
     context.is_printable = true;
 }
 
+void IdExpression::genCode(struct context& context){
+    stringstream code;
+    code << "\tpush dword [ebp" << (symbol_table[name].position >= 0?"+":"") << symbol_table[name].position << "]";
+
+    context.code = code.str();
+    context.comment = name;
+    context.is_printable = true;
+}
+
 void PrintStatement::genConstantData(){
     print_id = constant_data.size();
     
@@ -332,6 +397,25 @@ string PrintStatement::genCode(){
     code << "\tpush print_placeholder_" << print_id << endl
          << "\tcall printf" << endl
          << "\tadd esp, " << stackLeveling << endl;
+
+    return code.str();
+}
+
+string DeclareStatement::genCode(){
+    stringstream code;
+    code << "\tsub esp, " << size*4 << " ; Declaration of `" << name << "`";
+    return code.str();
+}
+
+string SetStatement::genCode(){
+    stringstream code;
+    struct context context;
+
+    expression->genCode(context);
+
+    code << context.code << endl
+         << "\tpop eax" << " ; " << context.comment << endl
+         << "\tmov [ebp" << symbol_table[name].position << "], eax" << endl;
 
     return code.str();
 }

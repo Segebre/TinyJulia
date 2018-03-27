@@ -8,6 +8,8 @@
 
     using namespace std;
 
+    extern bool helper_isArray(string name);
+
     Statement* code_tree;
     extern int yylineno;
     int yylex();
@@ -25,17 +27,18 @@
     bool boolean;
 }
 
-%token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON NEWLINE
+%token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON DOUBLE_COLON NEWLINE
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
 %token OPERATOR_SAL OPERATOR_SAR OPERATOR_OR OPERATOR_AND OPERATOR_NOT
-%token COMPARISON_GT COMPARISON_LT  COMPARISON_EQ  COMPARISON_GE COMPARISON_LE COMPARISON_NE OPERATOR_NEG
+%token COMPARISON_GT COMPARISON_LT COMPARISON_EQ COMPARISON_GE COMPARISON_LE COMPARISON_NE OPERATOR_NEG
 %token KW_PRINT KW_PRINTLN
-%token LITERAL INTEGER BOOLEAN
+%token LITERAL IDENTIFIER INTEGER BOOLEAN
+%token TYPE OPERATOR_ASSIGN
 
-%type<statement> statement_list statement print print_params
+%type<statement> statement_list statement print print_params assign
 %type<expression> condition expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
-%type<literal> LITERAL
-%type<integer> INTEGER
+%type<literal> LITERAL IDENTIFIER
+%type<integer> INTEGER TYPE
 %type<boolean> BOOLEAN
 
 %%
@@ -65,8 +68,10 @@ statement_list: statement_list statement_separator statement { $$ = $1; ((Statem
     | statement { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement($1); }
     ;
 
-statement: print { $$ = $1; };
-
+statement: print { $$ = $1; }
+    | assign { $$ = $1; }
+    ;
+    
 print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }
     | KW_PRINTLN PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(true); }
     ;
@@ -75,6 +80,11 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
     | print_params COMA optional_newlines condition { $$ = $1; struct parameter_type parameter; parameter.type = $4->getType(); parameter.expression = $4; ((PrintStatement*)$$)->addParameter(parameter);  }
     | LITERAL { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); ((PrintStatement*)$$)->addParameter(parameter); }
     | condition { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = $1->getType(); parameter.expression = $1; ((PrintStatement*)$$)->addParameter(parameter); }
+    ;
+
+assign: IDENTIFIER DOUBLE_COLON TYPE { $$ = new DeclareStatement(*$1, $3, 1); }
+    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $5, 1)); }
+    | IDENTIFIER OPERATOR_ASSIGN condition { $$ = new SetStatement(*$1, $3, 1); }
     ;
 
 condition: expression { $$ = $1; }
@@ -126,5 +136,6 @@ final_value: PARENTHESIS_LEFT condition PARENTHESIS_RIGHT { $$ = $2; }
     | INTEGER { $$ = new IntegerExpression($1); }
     | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($2); }
     | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($2*-1); }
+    | IDENTIFIER { $$ = new IdExpression(*$1); }
     ;
 %%

@@ -21,6 +21,10 @@ enum{
     TYPE_BOOLEAN
 };
 
+extern void helper_DeclareVariable(string name, int type, int size);
+extern void helper_SetVariable(string name, int type, int position);
+extern int helper_UseVariable(string name);
+
 class AST{};
 
 /////////////////
@@ -111,6 +115,17 @@ private:
     int boolean;
 };
 
+class IdExpression : public Expression{
+public:
+    IdExpression(string name){
+        this->type = helper_UseVariable(name);
+        this->name = name;
+    }
+    void genCode(struct context& context);
+private:
+    string name;
+};
+
 ////////////////
 // Statements //
 ////////////////
@@ -142,6 +157,36 @@ private:
     bool isprintline;
     vector<struct parameter_type> parameters;
     void genConstantData();
+};
+
+class DeclareStatement : public Statement{
+public:
+    DeclareStatement(string name, int type, int size){
+        helper_DeclareVariable(name, type, size);
+        this->name = name;
+        this->size = size;
+    }
+    void secondpass(){}
+    string genCode();
+private:
+    string name; //Used for comment only
+    int size;
+};
+
+class SetStatement : public Statement{
+public:
+    SetStatement(string name, Expression* expression, int position){
+        helper_SetVariable(name, expression->getType(), position);
+        this->name = name;
+        this->expression = expression;
+        this->position = position;
+    }
+    void secondpass(){}
+    string genCode();
+private:
+    string name;
+    Expression* expression;
+    int position;
 };
 
 
