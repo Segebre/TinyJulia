@@ -29,14 +29,14 @@
 
 %token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON DOUBLE_COLON NEWLINE
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
-%token OPERATOR_SAL OPERATOR_SAR OPERATOR_OR OPERATOR_AND OPERATOR_NOT
-%token COMPARISON_GT COMPARISON_LT COMPARISON_EQ COMPARISON_GE COMPARISON_LE COMPARISON_NE OPERATOR_NEG
+%token OPERATOR_SAL OPERATOR_SLR OPERATOR_SAR OPERATOR_OR OPERATOR_XOR OPERATOR_AND OPERATOR_NOT
+%token COMPARISON_GT COMPARISON_LT COMPARISON_EQ COMPARISON_GE COMPARISON_LE COMPARISON_NE COMPARISON_AND COMPARISON_OR OPERATOR_NEG
 %token KW_PRINT KW_PRINTLN
 %token LITERAL IDENTIFIER INTEGER BOOLEAN
 %token TYPE OPERATOR_ASSIGN
 
 %type<statement> statement_list statement print print_params assign
-%type<expression> condition expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
+%type<expression> condition condition_ooo_l1 expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
 %type<literal> LITERAL IDENTIFIER
 %type<integer> INTEGER TYPE
 %type<boolean> BOOLEAN
@@ -87,13 +87,17 @@ assign: IDENTIFIER DOUBLE_COLON TYPE { $$ = new DeclareStatement(*$1, $3, 1); }
     | IDENTIFIER OPERATOR_ASSIGN condition { $$ = new SetStatement(*$1, $3, 1); }
     ;
 
-condition: expression { $$ = $1; }
-    | condition COMPARISON_GT expression { $$ = new GTExpression($1, $3); }
-    | condition COMPARISON_LT expression { $$ = new LTExpression($1, $3); }
-    | condition COMPARISON_EQ expression { $$ = new EQExpression($1, $3); }
-    | condition COMPARISON_GE expression { $$ = new GEExpression($1, $3); }
-    | condition COMPARISON_LE expression { $$ = new LEExpression($1, $3); }
-    | condition COMPARISON_NE expression { $$ = new NEExpression($1, $3); }
+condition: condition_ooo_l1 { $$ = $1; }
+    | condition COMPARISON_AND condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $3->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonAndExpression($1, $3); }
+    | condition COMPARISON_OR condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $3->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonOrExpression($1, $3); }
+
+condition_ooo_l1: expression { $$ = $1; }
+    | condition_ooo_l1 COMPARISON_GT expression { $$ = new GTExpression($1, $3); }
+    | condition_ooo_l1 COMPARISON_LT expression { $$ = new LTExpression($1, $3); }
+    | condition_ooo_l1 COMPARISON_EQ expression { $$ = new EQExpression($1, $3); }
+    | condition_ooo_l1 COMPARISON_GE expression { $$ = new GEExpression($1, $3); }
+    | condition_ooo_l1 COMPARISON_LE expression { $$ = new LEExpression($1, $3); }
+    | condition_ooo_l1 COMPARISON_NE expression { $$ = new NEExpression($1, $3); }
     ;
 
 expression: expression_ooo_l1 { $$ = $1; }
@@ -103,11 +107,13 @@ expression: expression_ooo_l1 { $$ = $1; }
 
 expression_ooo_l1: expression_ooo_l2 { $$ = $1; }
     | expression_ooo_l1 OPERATOR_OR expression_ooo_l2 { $$ = new OrExpression($1, $3); }
+    | expression_ooo_l1 OPERATOR_XOR expression_ooo_l2 { $$ = new XorExpression($1, $3); }
     ;
 
 expression_ooo_l2: expression_ooo_l3 { $$ = $1; }
     | expression_ooo_l2 OPERATOR_SAL expression_ooo_l3 { $$ = new SalExpression($1, $3); }
     | expression_ooo_l2 OPERATOR_SAR expression_ooo_l3 { $$ = new SarExpression($1, $3); }
+    | expression_ooo_l2 OPERATOR_SLR expression_ooo_l3 { $$ = new SlrExpression($1, $3); }
     ;
 
 expression_ooo_l3: expression_ooo_l4 { $$ = $1; }
@@ -133,13 +139,7 @@ expression_ooo_l6: final_value { $$ = $1; }
 
 final_value: PARENTHESIS_LEFT condition PARENTHESIS_RIGHT { $$ = $2; }
     | BOOLEAN { $$ = new BooleanExpression($1); }
-    // | OPERATOR_ADD BOOLEAN { $$ = new IntegerExpression($2); }
-    // | OPERATOR_SUB BOOLEAN { $$ = new IntegerExpression($2*-1); }
     | INTEGER { $$ = new IntegerExpression($1); }
-    // | OPERATOR_ADD INTEGER { $$ = new IntegerExpression($2); }
-    // | OPERATOR_SUB INTEGER { $$ = new IntegerExpression($2*-1); }
     | IDENTIFIER { $$ = new IdentifierExpression(*$1); }
-    // | OPERATOR_ADD IDENTIFIER { $$ = new IdentifierExpression(*$2); }
-    // | OPERATOR_SUB IDENTIFIER { $$ = new MulExpression(new IdentifierExpression(*$2), new IntegerExpression(-1)); }
     ;
 %%

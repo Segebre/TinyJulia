@@ -31,8 +31,10 @@ ID [[:alpha:]_][[:alnum:]_]*
 "^"                 { return OPERATOR_POW; }
 "<<"                { return OPERATOR_SAL; }
 ">>"                { return OPERATOR_SAR; }
+">>>"               { return OPERATOR_SLR; }
 "|"                 { return OPERATOR_OR; }
 "&"                 { return OPERATOR_AND; }
+"$"                 { return OPERATOR_XOR; }
 "~"                 { return OPERATOR_NOT; }
 ">"                 { return COMPARISON_GT; }
 "<"                 { return COMPARISON_LT; }
@@ -40,6 +42,8 @@ ID [[:alpha:]_][[:alnum:]_]*
 ">="                { return COMPARISON_GE; }
 "<="                { return COMPARISON_LE; }
 "!="                { return COMPARISON_NE; }
+"||"                { return COMPARISON_OR; }
+"&&"                { return COMPARISON_AND; }
 "!"                 { return OPERATOR_NEG; }
 ","                 { return COMA; }
 ";"                 { return SEMICOLON; }

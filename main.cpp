@@ -94,6 +94,28 @@ int main(int argc, char* argv[]){
          << "\tret" << endl
          << "TinyJulia_negate_value_true:" << endl
          << "\tmov eax, 0" << endl
+         << "\tret" << endl
+         << endl << endl
+         << "TinyJulia_comparison_and:" << endl
+         << "\tcmp eax, 0" << endl
+         << "\tje TinyJulia_comparison_and_false" << endl
+         << "\tcmp ecx, 0" << endl
+         << "\tje TinyJulia_comparison_and_false" << endl
+         << "\tmov eax, 1" << endl
+         << "\tret" << endl
+         << "TinyJulia_comparison_and_false:" << endl
+         << "\tmov eax, 0" << endl
+         << "\tret" << endl
+         << endl << endl
+         << "TinyJulia_comparison_or:" << endl
+         << "\tcmp eax, 1" << endl
+         << "\tje TinyJulia_comparison_or_true" << endl
+         << "\tcmp ecx, 1" << endl
+         << "\tje TinyJulia_comparison_or_true" << endl
+         << "\tmov eax, 0" << endl
+         << "\tret" << endl
+         << "TinyJulia_comparison_or_true:" << endl
+         << "\tmov eax, 1" << endl
          << "\tret" << endl;
          COMPARISON(GT, le)
          COMPARISON(LT, ge)
