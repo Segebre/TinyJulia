@@ -21,10 +21,6 @@ enum{
     TYPE_BOOLEAN
 };
 
-extern void helper_DeclareVariable(string name, int type, int size);
-extern void helper_SetVariable(string name, int type, int position);
-extern int helper_UseVariable(string name);
-
 class AST{};
 
 /////////////////
@@ -39,6 +35,13 @@ protected:
     int type;
 };
 
+ 
+extern void helper_DeclareVariable(string name, int type, int size);
+extern void helper_SetVariable(string name, int type, Expression* position);
+extern int helper_UseVariable(string name);
+extern int helper_DeciferType(Expression* left, Expression* right);
+
+
 class BinaryExpression : public Expression{
 public:
     BinaryExpression(Expression* left, Expression* right){
@@ -49,8 +52,6 @@ protected:
     Expression* left;
     Expression* right;
 };
-
-extern int helper_DeciferType(Expression* left, Expression* right);
 
 BINARYEXPRESSIONHELPER(Add, TYPE_INTEGER);
 BINARYEXPRESSIONHELPER(Sub, TYPE_INTEGER);
@@ -121,13 +122,15 @@ private:
 
 class IdentifierExpression : public Expression{
 public:
-    IdentifierExpression(string name){
+    IdentifierExpression(string name, Expression* position){
         this->type = helper_UseVariable(name);
         this->name = name;
+        this->position = position;
     }
     void genCode(struct context& context);
 private:
     string name;
+    Expression* position;
 };
 
 ////////////////
@@ -179,7 +182,7 @@ private:
 
 class SetStatement : public Statement{
 public:
-    SetStatement(string name, Expression* expression, int position){
+    SetStatement(string name, Expression* expression, Expression* position){
         helper_SetVariable(name, expression->getType(), position);
         this->name = name;
         this->expression = expression;
@@ -190,7 +193,7 @@ public:
 private:
     string name;
     Expression* expression;
-    int position;
+    Expression* position;
 };
 
 

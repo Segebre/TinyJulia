@@ -22,21 +22,23 @@
 %union{
     Expression* expression;
     Statement* statement;
+    vector<Expression*>* array_values;
     string* literal;
     int integer;
     bool boolean;
 }
 
-%token PARENTHESIS_LEFT PARENTHESIS_RIGHT COMA SEMICOLON DOUBLE_COLON NEWLINE
+%token PARENTHESIS_LEFT PARENTHESIS_RIGHT BRACKET_LEFT BRACKET_RIGHT CURLY_LEFT CURLY_RIGHT COMA SEMICOLON DOUBLE_COLON NEWLINE
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
 %token OPERATOR_SAL OPERATOR_SLR OPERATOR_SAR OPERATOR_OR OPERATOR_XOR OPERATOR_AND OPERATOR_NOT
 %token COMPARISON_GT COMPARISON_LT COMPARISON_EQ COMPARISON_GE COMPARISON_LE COMPARISON_NE COMPARISON_AND COMPARISON_OR OPERATOR_NEG
-%token KW_PRINT KW_PRINTLN
+%token KW_PRINT KW_PRINTLN KW_ARRAY
 %token LITERAL IDENTIFIER INTEGER BOOLEAN
 %token TYPE OPERATOR_ASSIGN
 
 %type<statement> statement_list statement print print_params assign
 %type<expression> condition condition_ooo_l1 expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
+%type<array_values> array
 %type<literal> LITERAL IDENTIFIER
 %type<integer> INTEGER TYPE
 %type<boolean> BOOLEAN
@@ -83,13 +85,27 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
     ;
 
 assign: IDENTIFIER DOUBLE_COLON TYPE { $$ = new DeclareStatement(*$1, $3, 1); }
-    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $5, 1)); }
-    | IDENTIFIER OPERATOR_ASSIGN condition { $$ = new SetStatement(*$1, $3, 1); }
+    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $5, new IntegerExpression(1))); }
+    | IDENTIFIER OPERATOR_ASSIGN condition { $$ = new SetStatement(*$1, $3, new IntegerExpression(1)); }
+    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN condition { $$ = new SetStatement(*$1, $6, $3); }
+    | IDENTIFIER KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT PARENTHESIS_LEFT INTEGER PARENTHESIS_RIGHT { $$ = new DeclareStatement(*$1, $4, $7); }
+    | IDENTIFIER KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN BRACKET_LEFT array BRACKET_RIGHT  { 
+                                                                                                            $$ = new StatementBlock();
+                                                                                                            ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $4, $8->size()));
+                                                                                                            int position = 1;
+                                                                                                            for(Expression* expression : *$8)
+                                                                                                                ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, expression, new IntegerExpression(position++)));
+                                                                                                        }
+    ;
+
+array: array COMA optional_newlines condition { $$ = $1; $$->push_back($4); }
+    | condition { $$ = new vector<Expression*>; $$->push_back($1); }
     ;
 
 condition: condition_ooo_l1 { $$ = $1; }
     | condition COMPARISON_AND condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $3->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonAndExpression($1, $3); }
     | condition COMPARISON_OR condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $3->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonOrExpression($1, $3); }
+    ;
 
 condition_ooo_l1: expression { $$ = $1; }
     | condition_ooo_l1 COMPARISON_GT expression { $$ = new GTExpression($1, $3); }
@@ -140,6 +156,7 @@ expression_ooo_l6: final_value { $$ = $1; }
 final_value: PARENTHESIS_LEFT condition PARENTHESIS_RIGHT { $$ = $2; }
     | BOOLEAN { $$ = new BooleanExpression($1); }
     | INTEGER { $$ = new IntegerExpression($1); }
-    | IDENTIFIER { $$ = new IdentifierExpression(*$1); }
+    | IDENTIFIER { $$ = new IdentifierExpression(*$1, new IntegerExpression(1)); }
+    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT { $$ = new IdentifierExpression(*$1, $3); }
     ;
 %%

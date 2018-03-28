@@ -22,6 +22,10 @@ ID [[:alpha:]_][[:alnum:]_]*
 "=#"                { std::cerr << yylineno << ": Unpaired end of block comment" << std::endl; exit(1);  }
 "("                 { return PARENTHESIS_LEFT; }
 ")"                 { return PARENTHESIS_RIGHT; }
+"["                 { return BRACKET_LEFT; }
+"]"                 { return BRACKET_RIGHT; }
+"{"                 { return CURLY_LEFT; }
+"}"                 { return CURLY_RIGHT; }
 "="                 { return OPERATOR_ASSIGN; }
 "+"                 { return OPERATOR_ADD; }
 "-"                 { return OPERATOR_SUB; }
@@ -55,6 +59,7 @@ ID [[:alpha:]_][[:alnum:]_]*
 "::"                { return DOUBLE_COLON; }
 "Int"               { yylval.integer = TYPE_INTEGER; return TYPE; }
 "Bool"              { yylval.integer = TYPE_BOOLEAN; return TYPE; }
+"::Array"           { return KW_ARRAY; }
 {ID}                { yylval.literal = new string(yytext); return IDENTIFIER; }
 {DIGIT}+            { yylval.integer = atoi(yytext); return INTEGER; }
 \"                  { literal = "\""; BEGIN(literal_parsing); }

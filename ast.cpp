@@ -32,39 +32,35 @@ struct symbol{
 
 vector<string> constant_data;
 map<string, struct symbol> symbol_table;
-static int next_available = -4;
+static int esp = 0;
 
 void helper_DeclareVariable(string name, int type, int size){
     if(symbol_table.count(name)){
-        std::cerr << "Variable redeclaration not allowed!" << std::endl;
+        std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
         exit(1);
     }
     struct symbol symbol;
     symbol.type = type;
-    symbol.position = next_available;
+    symbol.position = esp-size*4;
     symbol.size = size;
-    next_available -= size*4;
+    esp -= symbol.position;
     symbol_table[name] = symbol;
 }
 
-void helper_SetVariable(string name, int type, int position){
+void helper_SetVariable(string name, int type, Expression* position){
     if(!symbol_table.count(name)){
-        std::cerr << "Variable first use cannot be before its declaration!" << std::endl;
+        std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
         exit(1);
     }
-    if(position < 1 || position > symbol_table[name].size){
-        std::cerr << "Index out of bound exception!" << std::endl;
-        exit(1);
-    }
-    else if(symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
-        std::cerr << "Incompatible types!" << std::endl;
+    if(symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+        std::cerr << "ERR: Incompatible types!" << std::endl;
         exit(1);
     }
 }
 
 int helper_UseVariable(string name){
     if(!symbol_table.count(name)){
-        std::cerr << "Variable first use cannot be before its declaration!" << std::endl;
+        std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
         exit(1);
     }
     return symbol_table[name].type;
@@ -421,7 +417,13 @@ void BooleanExpression::genCode(struct context& context){
 
 void IdentifierExpression::genCode(struct context& context){
     stringstream code;
-    code << "\tpush dword [ebp" << (symbol_table[name].position >= 0?"+":"") << symbol_table[name].position << "]";
+    struct context position_context;
+
+    position->genCode(position_context);
+    code << position_context.code << " ; " << position_context.comment << endl
+         << "\tpop eax" << endl
+         << "\tdec eax" << " ; position-1 for indexing from 0" << endl
+         << "\tpush dword [ebp" << (symbol_table[name].position >= 0?"+":"") << symbol_table[name].position << "+eax*4]";
 
     context.code = code.str();
     context.comment = name;
@@ -489,13 +491,18 @@ string DeclareStatement::genCode(){
 
 string SetStatement::genCode(){
     stringstream code;
-    struct context context;
+    struct context expression_context;
+    struct context position_context;
 
-    expression->genCode(context);
+    expression->genCode(expression_context);
+    position->genCode(position_context);
 
-    code << context.code << endl
-         << "\tpop eax" << " ; " << context.comment << endl
-         << "\tmov [ebp" << symbol_table[name].position << "], eax" << endl;
+    code << position_context.code << endl
+         << expression_context.code << endl
+         << "\tpop eax" << " ; " << expression_context.comment << endl
+         << "\tpop ecx" << " ; " << position_context.comment << endl
+         << "\tdec ecx" << " ; position-1 for indexing from 0" << endl
+         << "\tmov [ebp" << (symbol_table[name].position>0?"+":"") << symbol_table[name].position << "+ecx*4], eax" << endl;
 
     return code.str();
 }

@@ -4,18 +4,27 @@
 - ### Types
     - Integer: a positive or negative whole number capable of being represented with 32 bits.
     - Booleans: the keywords `true` and `false` with their respective meaning.
-- ### Usage
+- ### Declaration (can only be done once)
     - <variable name 1\>`::Int`: Declares an Integer value.
     - <variable name 2\>`::Bool`: Declares a Boolean value.
+    - <variable name 3\>`::Array{Int}(`<size\>`)`: Declares a Integer array of size <size\>.
+    - <variable name 4\>`::Array{Bool}(`<size\>`)`: Declares a Boolean array of size <size\>.
 
     - <variable name 1\>`::Int =` <Integer or Boolean\>: Declares and initializes an Integer value.
     - <variable name 2\>`::Bool =` <Boolean\>: Declares and initializes an Boolean value.
+    - <variable name 3\>`::Array{Int} = [<value-1\>, <value-2\>, <value-n\>]`: Declares a Integer array of size n.
+    - <variable name 4\>`::Array{Bool} = [<value-1\>, <value-2\>, <value-n\>]`: Declares a Boolean array of size n.
 
+- ### Usage
     - <variable name 1\> : Gets the Integer value.
     - <variable name 2\> : Gets the Boolean value.
+    - <variable name 3\>`[`<offset\>`]` : Gets the Integer value at offset <offset\>; Index starts from 1.
+    - <variable name 4\>`[`<offset\>`]` : Gets the Boolean value at offset <offset\>; Index starts from 1.
     
     - <variable name 1\> `=` <Integer or Boolean\>: Sets the Integer value.
     - <variable name 2\> `=` <Boolean\>: Sets the Boolean value.
+    - <variable name 3\>`[`<offset\>`]` : Sets the Integer value at offset <offset\>; Index starts from 1.
+    - <variable name 4\>`[`<offset\>`]` : Sets the Boolean value at offset <offset\>; Index starts from 1.
 
 ## Comments
 - ### Variants
