@@ -431,6 +431,15 @@ void IdentifierExpression::genCode(struct context& context){
     context.is_printable = true;
 }
 
+string ExpressionStatement::genCode(){
+    stringstream code;
+    struct context context;
+    expression->genCode(context);
+    code << context.code << endl
+         << "\tpop eax ; Unused result lost" << endl;
+    return code.str();
+};
+
 void PrintStatement::genConstantData(){
     print_id = constant_data.size();
     
@@ -491,7 +500,7 @@ string IfStatement::genCode(){
 
     condition->genCode(condition_context);
 
-    code << "if_start" << if_id << ":" << endl
+    code << "if_start_" << if_id << ":" << endl
          << condition_context.code << " ; Condition" << (condition_context.is_printable?("is " + condition_context.comment):"") << endl
          << "\tpop eax" << endl
          << "\tcmp eax, 0" << endl

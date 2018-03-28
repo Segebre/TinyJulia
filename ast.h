@@ -152,6 +152,17 @@ private:
     vector<Statement*> statements;
 };
 
+class ExpressionStatement : public Statement{
+public:
+    ExpressionStatement(Expression* expression){
+        this->expression = expression;
+    }
+    string genCode();
+    void secondpass(){ }
+private:
+    Expression* expression;
+};
+
 class PrintStatement : public Statement{
 public:
     PrintStatement(){}

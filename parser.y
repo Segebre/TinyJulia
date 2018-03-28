@@ -76,6 +76,7 @@ statement_list: statement_list statement_separator statement { $$ = $1; ((Statem
 statement: print { $$ = $1; }
     | assign { $$ = $1; }
     | if { $$ = $1; }
+    | condition { $$ = new ExpressionStatement($1); }
     ;
     
 print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }
