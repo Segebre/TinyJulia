@@ -33,6 +33,7 @@ struct symbol{
 vector<string> constant_data;
 map<string, struct symbol> symbol_table;
 static int esp = 0;
+static unsigned int if_count = 0;
 
 void helper_DeclareVariable(string name, int type, int size){
     if(symbol_table.count(name)){
@@ -480,6 +481,27 @@ string PrintStatement::genCode(){
          << "\tcall printf" << endl
          << "\tadd esp, " << stackLeveling << endl;
 
+    return code.str();
+}
+
+string IfStatement::genCode(){
+    stringstream code;
+    struct context condition_context;
+    int if_id = if_count++;
+
+    condition->genCode(condition_context);
+
+    code << "if_start" << if_id << ":" << endl
+         << condition_context.code << " ; Condition" << (condition_context.is_printable?("is " + condition_context.comment):"") << endl
+         << "\tpop eax" << endl
+         << "\tcmp eax, 0" << endl
+         << "\tje if_else_" << if_id << endl
+         << trueBlock->genCode() << endl
+         << "\tjmp if_end_" << if_id << endl
+         << "if_else_" << if_id << ":" << endl
+         << falseBlock->genCode() << endl
+         << "if_end_" << if_id << ":" << endl;
+        
     return code.str();
 }
 

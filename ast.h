@@ -166,6 +166,21 @@ private:
     void genConstantData();
 };
 
+class IfStatement : public Statement{
+public:
+    IfStatement(Expression* condition, Statement* trueBlock, Statement* falseBlock){
+        this->condition = condition;
+        this->trueBlock = trueBlock;
+        this->falseBlock = falseBlock;
+    }
+    void secondpass(){ trueBlock->secondpass(); falseBlock->secondpass(); }
+    string genCode();
+private:
+    Expression* condition;
+    Statement* trueBlock;
+    Statement* falseBlock;
+};
+
 class DeclareStatement : public Statement{
 public:
     DeclareStatement(string name, int type, int size){

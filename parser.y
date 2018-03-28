@@ -32,11 +32,11 @@
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
 %token OPERATOR_SAL OPERATOR_SLR OPERATOR_SAR OPERATOR_OR OPERATOR_XOR OPERATOR_AND OPERATOR_NOT
 %token COMPARISON_GT COMPARISON_LT COMPARISON_EQ COMPARISON_GE COMPARISON_LE COMPARISON_NE COMPARISON_AND COMPARISON_OR OPERATOR_NEG
-%token KW_PRINT KW_PRINTLN KW_ARRAY
+%token KW_PRINT KW_PRINTLN KW_ARRAY KW_IF KW_ELSEIF KW_ELSE KW_END
 %token LITERAL IDENTIFIER INTEGER BOOLEAN
 %token TYPE OPERATOR_ASSIGN
 
-%type<statement> statement_list statement print print_params assign
+%type<statement> optional_statements statement_list statement print print_params assign if else
 %type<expression> condition condition_ooo_l1 expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
 %type<array_values> array
 %type<literal> LITERAL IDENTIFIER
@@ -44,8 +44,11 @@
 %type<boolean> BOOLEAN
 
 %%
-initial: optional_statement_separators statement_list optional_statement_separators { code_tree = $2; }
-    | optional_statement_separators { code_tree = new StatementBlock(); } //Set code_tree = NULL to create no code.
+initial: optional_statements { code_tree = $1; }
+    ;
+
+optional_statements: optional_statement_separators statement_list optional_statement_separators { $$ = $2; }
+    | optional_statement_separators { $$ = new StatementBlock(); } //Set $$ = NULL to create no code.
     ;
 
 optional_statement_separators: statement_separator
@@ -72,6 +75,7 @@ statement_list: statement_list statement_separator statement { $$ = $1; ((Statem
 
 statement: print { $$ = $1; }
     | assign { $$ = $1; }
+    | if { $$ = $1; }
     ;
     
 print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }
@@ -85,15 +89,15 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
     ;
 
 assign: IDENTIFIER DOUBLE_COLON TYPE { $$ = new DeclareStatement(*$1, $3, 1); }
-    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $5, new IntegerExpression(1))); }
-    | IDENTIFIER OPERATOR_ASSIGN condition { $$ = new SetStatement(*$1, $3, new IntegerExpression(1)); }
-    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN condition { $$ = new SetStatement(*$1, $6, $3); }
+    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN optional_statement_separators condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $6, new IntegerExpression(1))); }
+    | IDENTIFIER OPERATOR_ASSIGN optional_statement_separators condition { $$ = new SetStatement(*$1, $4, new IntegerExpression(1)); }
+    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN optional_statement_separators condition { $$ = new SetStatement(*$1, $7, $3); }
     | IDENTIFIER KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT PARENTHESIS_LEFT INTEGER PARENTHESIS_RIGHT { $$ = new DeclareStatement(*$1, $4, $7); }
-    | IDENTIFIER KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN BRACKET_LEFT array BRACKET_RIGHT  { 
+    | IDENTIFIER KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_statement_separators BRACKET_LEFT array BRACKET_RIGHT  { 
                                                                                                             $$ = new StatementBlock();
-                                                                                                            ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $4, $8->size()));
+                                                                                                            ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $4, $9->size()));
                                                                                                             int position = 1;
-                                                                                                            for(Expression* expression : *$8)
+                                                                                                            for(Expression* expression : *$9)
                                                                                                                 ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, expression, new IntegerExpression(position++)));
                                                                                                         }
     ;
@@ -102,48 +106,56 @@ array: array COMA optional_newlines condition { $$ = $1; $$->push_back($4); }
     | condition { $$ = new vector<Expression*>; $$->push_back($1); }
     ;
 
+if: KW_IF condition optional_statements else KW_END { $$ = new IfStatement($2, $3, $4); }
+    ;
+
+else: KW_ELSEIF condition optional_statements else { $$ = new IfStatement($2, $3, $4); }
+    | KW_ELSE optional_statements { $$ = $2; }
+    | { $$ = new StatementBlock(); }
+    ;
+
 condition: condition_ooo_l1 { $$ = $1; }
-    | condition COMPARISON_AND condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $3->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonAndExpression($1, $3); }
-    | condition COMPARISON_OR condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $3->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonOrExpression($1, $3); }
+    | condition COMPARISON_AND optional_statement_separators condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonAndExpression($1, $4); }
+    | condition COMPARISON_OR optional_statement_separators condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonOrExpression($1, $4); }
     ;
 
 condition_ooo_l1: expression { $$ = $1; }
-    | condition_ooo_l1 COMPARISON_GT expression { $$ = new GTExpression($1, $3); }
-    | condition_ooo_l1 COMPARISON_LT expression { $$ = new LTExpression($1, $3); }
-    | condition_ooo_l1 COMPARISON_EQ expression { $$ = new EQExpression($1, $3); }
-    | condition_ooo_l1 COMPARISON_GE expression { $$ = new GEExpression($1, $3); }
-    | condition_ooo_l1 COMPARISON_LE expression { $$ = new LEExpression($1, $3); }
-    | condition_ooo_l1 COMPARISON_NE expression { $$ = new NEExpression($1, $3); }
+    | condition_ooo_l1 COMPARISON_GT optional_statement_separators expression { $$ = new GTExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_LT optional_statement_separators expression { $$ = new LTExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_EQ optional_statement_separators expression { $$ = new EQExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_GE optional_statement_separators expression { $$ = new GEExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_LE optional_statement_separators expression { $$ = new LEExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_NE optional_statement_separators expression { $$ = new NEExpression($1, $4); }
     ;
 
 expression: expression_ooo_l1 { $$ = $1; }
-    | expression OPERATOR_ADD expression_ooo_l1 { $$ = new AddExpression($1, $3); }
-    | expression OPERATOR_SUB expression_ooo_l1 { $$ = new SubExpression($1, $3); }
+    | expression OPERATOR_ADD optional_statement_separators expression_ooo_l1 { $$ = new AddExpression($1, $4); }
+    | expression OPERATOR_SUB optional_statement_separators expression_ooo_l1 { $$ = new SubExpression($1, $4); }
     ;
 
 expression_ooo_l1: expression_ooo_l2 { $$ = $1; }
-    | expression_ooo_l1 OPERATOR_OR expression_ooo_l2 { $$ = new OrExpression($1, $3); }
-    | expression_ooo_l1 OPERATOR_XOR expression_ooo_l2 { $$ = new XorExpression($1, $3); }
+    | expression_ooo_l1 OPERATOR_OR optional_statement_separators expression_ooo_l2 { $$ = new OrExpression($1, $4); }
+    | expression_ooo_l1 OPERATOR_XOR optional_statement_separators expression_ooo_l2 { $$ = new XorExpression($1, $4); }
     ;
 
 expression_ooo_l2: expression_ooo_l3 { $$ = $1; }
-    | expression_ooo_l2 OPERATOR_SAL expression_ooo_l3 { $$ = new SalExpression($1, $3); }
-    | expression_ooo_l2 OPERATOR_SAR expression_ooo_l3 { $$ = new SarExpression($1, $3); }
-    | expression_ooo_l2 OPERATOR_SLR expression_ooo_l3 { $$ = new SlrExpression($1, $3); }
+    | expression_ooo_l2 OPERATOR_SAL optional_statement_separators expression_ooo_l3 { $$ = new SalExpression($1, $4); }
+    | expression_ooo_l2 OPERATOR_SAR optional_statement_separators expression_ooo_l3 { $$ = new SarExpression($1, $4); }
+    | expression_ooo_l2 OPERATOR_SLR optional_statement_separators expression_ooo_l3 { $$ = new SlrExpression($1, $4); }
     ;
 
 expression_ooo_l3: expression_ooo_l4 { $$ = $1; }
-    | expression_ooo_l3 OPERATOR_AND expression_ooo_l4 { $$ = new AndExpression($1, $3); }
+    | expression_ooo_l3 OPERATOR_AND optional_statement_separators expression_ooo_l4 { $$ = new AndExpression($1, $4); }
     ;
 
 expression_ooo_l4: expression_ooo_l5 { $$ = $1; }
-    | expression_ooo_l4 OPERATOR_MUL expression_ooo_l5 { $$ = new MulExpression($1, $3); }
-    | expression_ooo_l4 OPERATOR_DIV expression_ooo_l5 { $$ = new DivExpression($1, $3); }
-    | expression_ooo_l4 OPERATOR_MOD expression_ooo_l5 { $$ = new ModExpression($1, $3); }
+    | expression_ooo_l4 OPERATOR_MUL optional_statement_separators expression_ooo_l5 { $$ = new MulExpression($1, $4); }
+    | expression_ooo_l4 OPERATOR_DIV optional_statement_separators expression_ooo_l5 { $$ = new DivExpression($1, $4); }
+    | expression_ooo_l4 OPERATOR_MOD optional_statement_separators expression_ooo_l5 { $$ = new ModExpression($1, $4); }
     ;
 
 expression_ooo_l5: expression_ooo_l6 { $$ = $1; }
-    | expression_ooo_l6 OPERATOR_POW expression_ooo_l5 { $$ = new PowExpression($1, $3); }
+    | expression_ooo_l6 OPERATOR_POW optional_statement_separators expression_ooo_l5 { $$ = new PowExpression($1, $4); }
     ;
 
 expression_ooo_l6: final_value { $$ = $1; }

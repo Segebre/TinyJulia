@@ -56,6 +56,10 @@ ID [[:alpha:]_][[:alnum:]_]*
 "false"             { yylval.boolean = false; return BOOLEAN; }
 "print"             { return KW_PRINT; }
 "println"           { return KW_PRINTLN; }
+"if"                { return KW_IF; }
+"elseif"            { return KW_ELSEIF; }
+"else"              { return KW_ELSE; }
+"end"               { return KW_END; }
 "::"                { return DOUBLE_COLON; }
 "Int"               { yylval.integer = TYPE_INTEGER; return TYPE; }
 "Bool"              { yylval.integer = TYPE_BOOLEAN; return TYPE; }

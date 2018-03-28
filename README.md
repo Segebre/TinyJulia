@@ -79,8 +79,10 @@
 - ### Binary Operators
     - `|` : OR
     - `&` : AND
+    - `$` : XOR
     - `<<` : Arithmetic Shift Left 
     - `>>` : Arithmetic Shift Right
+    - `>>>` : Logical Shift Right
  - ### Binary Operators Usage
     - <Integer or Boolean Value\> <Operator\> <Integer or Boolean Value\> : Returns result of operation
  - ### Uniary Operators
@@ -90,7 +92,24 @@
  - ### Type
     - `|` : Boolean if both values are boolean, else Integer
     - `&` : Boolean if both values are boolean, else Integer
+    - `$` : Boolean if both values are boolean, else Integer
     - `<<` : Integer
     - `>>` : Integer
+    - `>>>` : Integer
     - `~` : Boolean if value is boolean, else Integer
 
+## If Statement
+- ### Usage
+    - `if` <condition\>
+        <statements\>
+      `elseif` <condition\>
+        <statements\>
+      `else`
+        <statements\>
+      `end`
+- ### Notes
+    - `if` must be first
+    - `elseif` and `else` sentences are optional
+    - if there is an `else` it must be last
+    - executes code if condition is true
+    - conditionals can only be of type Boolean
