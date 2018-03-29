@@ -38,6 +38,7 @@ stringstream functions;
 map<string, struct symbol> global_symbol_table;
 map<string, map<string, struct symbol> >local_symbol_table;
 map<string, int> local_esp;
+map<string, vector<struct function_parameter>*> sanity_check;
 
 int helper_getSize(string name, int type){
     if(!global_symbol_table.count(name)){
@@ -97,7 +98,7 @@ bool helper_isArray(string name){
     return false;
 }
 
-void helper_DeclareFunction(string name, vector<struct function_parameter> function_params){
+void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params){
     if(current_scope != ""){
         std::cerr << "Function declaration inside a function not allowed!" << std::endl;
         exit(1);
@@ -111,8 +112,10 @@ void helper_DeclareFunction(string name, vector<struct function_parameter> funct
         exit(1);
     }
 
+    sanity_check[name] = function_params;
+
     int offset = 8;
-    for(function_parameter fp : function_params){
+    for(function_parameter fp : *function_params){
         struct symbol symbol;
         symbol.type = fp.type;
         symbol.position = offset;
@@ -464,17 +467,49 @@ void BooleanExpression::genCode(struct context& context){
 
 void IdentifierExpression::genCode(struct context& context){
     stringstream code;
+    stringstream comment;
     struct context position_context;
 
     position->genCode(position_context);
-    code << position_context.code << " ; " << position_context.comment << endl
+    code << position_context.code << " ; offset ; " << position_context.comment << endl
          << "\tpop eax" << endl
          << "\tdec eax" << " ; position-1 for indexing from 0" << endl
          << "\tpush dword [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+eax*4]";
 
+    comment << name << "[" << position_context.comment << "]";
+
     context.code = code.str();
-    context.comment = name;
+    context.comment = comment.str();
     context.is_printable = true;
+}
+
+void FunctionExpression::addParameter(Expression* parameter){
+    int index = parameters.size();
+    if((sanity_check[name]->at(index).type == TYPE_BOOLEAN && parameter->getType() != TYPE_BOOLEAN) || (sanity_check[name]->at(index).size != parameter->getSize())){
+        std::cerr << "ERR: Parameter at index `" << index << "` is not compatible with declaration!" << std::endl;
+        exit(1);
+    }
+    parameters.push_back(parameter);
+}
+
+void FunctionExpression::genCode(struct context& context){
+    stringstream code;
+    stringstream comment;
+    int count = parameters.size();
+    for(vector<Expression*>::reverse_iterator parameter = parameters.rbegin(); parameter != parameters.rend(); parameter++){
+        struct context parameter_context;
+        (*parameter)->genCode(parameter_context);
+        code << parameter_context.code << " ; Parmeter " << count-- << endl;
+    }
+    code << "\tcall " << name << endl
+         << "\tadd esp, " << parameters.size()*4 << endl
+         << "\tpush eax";
+        
+    comment << " ; " << name << "() return value";
+
+    context.code = code.str();
+    context.comment = comment.str();
+    context.is_printable = false;
 }
 
 string ExpressionStatement::genCode(){
@@ -516,6 +551,10 @@ string PrintStatement::genCode(){
             continue;
         }
         else if(parameter->type == TYPE_INTEGER || parameter->type == TYPE_BOOLEAN){
+            if(parameter->expression->getSize() > 1){
+                std::cerr << "ERR: `" << ((IdentifierExpression*)parameter->expression)->getName() << "`: Arrays are not allowed in Print Statement!" << std::endl;
+                exit(1);
+            }
             struct context context;
             parameter->expression->genCode(context);
             code << context.code;
@@ -588,10 +627,11 @@ string SetStatement::genCode(){
 
     code << position_context.code << endl
          << expression_context.code << endl
-         << "\tpop eax" << " ; " << expression_context.comment << endl
-         << "\tpop ecx" << " ; " << position_context.comment << endl
+         << "\tpop eax" << " ; value ; " << expression_context.comment << endl
+         << "\tpop ecx" << " ; offset ; " << position_context.comment << endl
          << "\tdec ecx" << " ; position-1 for indexing from 0" << endl
-         << "\tmov [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+ecx*4], eax" << endl;
+         << "\tmov [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+ecx*4], eax ; "
+         << name << "[" << position_context.comment << "]" << "=" << expression_context.comment << endl;
 
     return code.str();
 }

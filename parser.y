@@ -23,7 +23,7 @@
     Expression* expression;
     Statement* statement;
     vector<Expression*>* array_values;
-    vector<struct function_parameter>* function_params;
+    vector<struct function_parameter>* function_statement_params;
     string* literal;
     int integer;
     bool boolean;
@@ -38,9 +38,9 @@
 %token TYPE OPERATOR_ASSIGN
 
 %type<statement> optional_statements statement_list statement print print_params assign else
-%type<expression> condition condition_ooo_l1 expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
+%type<expression> condition condition_ooo_l1 expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value optional_function_expression_params function_expression_params
 %type<array_values> array
-%type<function_params> optional_function_params function_params
+%type<function_statement_params> optional_function_statement_params function_statement_params
 %type<literal> LITERAL IDENTIFIER
 %type<integer> INTEGER TYPE
 %type<boolean> BOOLEAN
@@ -79,7 +79,7 @@ statement: print { $$ = $1; }
     | condition { $$ = new ExpressionStatement($1); }
     | assign { $$ = $1; }
     | KW_IF condition optional_statements else KW_END { $$ = new IfStatement($2, $3, $4); }
-    | KW_FUNCTION IDENTIFIER PARENTHESIS_LEFT optional_function_params PARENTHESIS_RIGHT DOUBLE_COLON TYPE optional_statements KW_END { $$ = new FunctionStatement(*$2, $7, $4, $8); }
+    | KW_FUNCTION IDENTIFIER PARENTHESIS_LEFT optional_function_statement_params PARENTHESIS_RIGHT DOUBLE_COLON TYPE optional_statements KW_END { $$ = new FunctionStatement(*$2, $7, $4, $8); }
     ;
     
 print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }
@@ -149,11 +149,11 @@ else: KW_ELSEIF condition optional_statements else { $$ = new IfStatement($2, $3
     | { $$ = new StatementBlock(); }
     ;
 
-optional_function_params: function_params { $$ = $1; }
+optional_function_statement_params: function_statement_params { $$ = $1; }
     | { $$ = new vector<function_parameter>; }
     ;
 
-function_params: function_params COMA optional_newlines IDENTIFIER DOUBLE_COLON TYPE { $$ = $1; struct function_parameter fp; fp.name = *$4; fp.type = $6; $$->push_back(fp); }
+function_statement_params: function_statement_params COMA optional_newlines IDENTIFIER DOUBLE_COLON TYPE { $$ = $1; struct function_parameter fp; fp.name = *$4; fp.type = $6; $$->push_back(fp); }
     | IDENTIFIER DOUBLE_COLON TYPE { $$ = new vector<function_parameter>; struct function_parameter fp; fp.name = *$1; fp.type = $3; $$->push_back(fp); }
     ;
 
@@ -213,5 +213,15 @@ final_value: PARENTHESIS_LEFT condition PARENTHESIS_RIGHT { $$ = $2; }
     | INTEGER { $$ = new IntegerExpression($1); }
     | IDENTIFIER { $$ = new IdentifierExpression(*$1); }
     | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT { $$ = new IdentifierExpression(*$1, $3); }
+    | IDENTIFIER PARENTHESIS_LEFT optional_function_expression_params PARENTHESIS_RIGHT { $$ = $3; ((FunctionExpression*)$$)->addName(*$1); }
     ;
+
+optional_function_expression_params: function_expression_params { $$ = $1; }
+    | { $$ = new FunctionExpression(); }
+    ;
+
+function_expression_params: function_expression_params COMA optional_newlines final_value { $$ = $1; ((FunctionExpression*)$$)->addParameter($4); }
+    | final_value { $$ = new FunctionExpression(); ((FunctionExpression*)$$)->addParameter($1); }
+    ;
+
 %%
