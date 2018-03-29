@@ -44,7 +44,7 @@ int helper_getSize(string name, int type){
         std::cerr << "ERR: Variable `" << name << "` does not exist!" << std::endl;
         exit(1);
     }
-    if(global_symbol_table[name].type != type){
+    if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
         std::cerr << "ERR: Variable `" << name << "` does not match type!" << std::endl;
         exit(1);
     }

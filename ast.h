@@ -37,6 +37,7 @@ class Expression : public AST{
 public:
     virtual void genCode(struct context& context) = 0;
     int getType(){ return this->type; }
+    virtual int getSize(){ return 1; }
 protected:
     int type;
 };
@@ -148,10 +149,19 @@ public:
         this->name = name;
         this->position = position;
     }
+    IdentifierExpression(string name){
+        this->type = helper_UseVariable(name);
+        this->name = name;
+        this->array = helper_getSize(name, this->type) == 1?false:true;
+        this->position = new IntegerExpression(array);
+    }
     void genCode(struct context& context);
+    string getName(){ return name; }
+    int getSize(){ return this->array?helper_getSize(name, this->type):1; }
 private:
     string name;
     Expression* position;
+    bool array;
 };
 
 ////////////////

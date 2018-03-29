@@ -93,24 +93,51 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
     ;
 
 assign: IDENTIFIER DOUBLE_COLON TYPE { $$ = new DeclareStatement(*$1, $3, 1); }
-    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN optional_newlines condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $6, new IntegerExpression(1))); }
-    | IDENTIFIER OPERATOR_ASSIGN optional_newlines condition { $$ = new SetStatement(*$1, $4, new IntegerExpression(1)); }
-    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN optional_newlines condition { $$ = new SetStatement(*$1, $7, $3); }
+    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN optional_newlines condition {
+        if($6->getSize() > 1){
+            std::cerr << "ERR: Incompatible sizes on `" << *$1 << "` assignation!" << std::endl;
+            exit(1);
+        }
+        $$ = new StatementBlock();
+        ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1));
+        ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $6, new IntegerExpression(1)));
+    }
+    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN optional_newlines condition {
+        if($7->getSize() > 1){
+            std::cerr << "ERR: Incompatible sizes on `" << *$1 << "` assignation!" << std::endl;
+            exit(1);
+        }
+        $$ = new SetStatement(*$1, $7, $3);
+    }
     | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT PARENTHESIS_LEFT INTEGER PARENTHESIS_RIGHT { $$ = new DeclareStatement(*$1, $5, $8); }
+    | IDENTIFIER OPERATOR_ASSIGN optional_newlines condition {
+        int size = $4->getSize();
+        if(size != helper_getSize(*$1, TYPE_BOOLEAN)){
+            std::cerr << "ERR: Incompatible sizes on `" << *$1 << "` assignation!" << std::endl;
+            exit(1);
+        }
+        if(size == 1)
+            $$ = new SetStatement(*$1, $4, new IntegerExpression(1));
+        else{
+            $$ = new StatementBlock();
+            for(int position = 1; position <= size; position++)
+                ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, new IdentifierExpression(((IdentifierExpression*)$4)->getName(), new IntegerExpression(position)), new IntegerExpression(position)));
+        }
+    }
     | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_newlines IDENTIFIER {
-                                                                                                                    int size = helper_getSize(*$9, $5);
-                                                                                                                    $$ = new StatementBlock();
-                                                                                                                    ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, size));
-                                                                                                                    for(int position = 1; position <= size; position++)
-                                                                                                                        ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, new IdentifierExpression(*$9, new IntegerExpression(position)), new IntegerExpression(position))); 
-                                                                                                                }
+        int size = helper_getSize(*$9, $5);
+        $$ = new StatementBlock();
+        ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, size));
+        for(int position = 1; position <= size; position++)
+            ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, new IdentifierExpression(*$9, new IntegerExpression(position)), new IntegerExpression(position))); 
+    }
     | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_newlines BRACKET_LEFT array BRACKET_RIGHT   { 
-                                                                                                                                            $$ = new StatementBlock();
-                                                                                                                                            ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, $10->size()));
-                                                                                                                                            int position = 1;
-                                                                                                                                            for(Expression* expression : *$10)
-                                                                                                                                                ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, expression, new IntegerExpression(position++)));
-                                                                                                                                        }
+        $$ = new StatementBlock();
+        ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, $10->size()));
+        int position = 1;
+        for(Expression* expression : *$10)
+            ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, expression, new IntegerExpression(position++)));
+    }
     ;
 
 array: array COMA optional_newlines condition { $$ = $1; $$->push_back($4); }
@@ -184,7 +211,7 @@ expression_ooo_l6: final_value { $$ = $1; }
 final_value: PARENTHESIS_LEFT condition PARENTHESIS_RIGHT { $$ = $2; }
     | BOOLEAN { $$ = new BooleanExpression($1); }
     | INTEGER { $$ = new IntegerExpression($1); }
-    | IDENTIFIER { $$ = new IdentifierExpression(*$1, new IntegerExpression(1)); }
+    | IDENTIFIER { $$ = new IdentifierExpression(*$1); }
     | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT { $$ = new IdentifierExpression(*$1, $3); }
     ;
 %%
