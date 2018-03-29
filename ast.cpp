@@ -64,7 +64,7 @@ void helper_DeclareVariable(string name, int type, int size){
     symbol.type = type;
     symbol.position = global_esp-size*4;
     symbol.size = size;
-    global_esp += symbol.position;
+    global_esp = symbol.position;
     global_symbol_table[name] = symbol;
 }
 
