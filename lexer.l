@@ -60,10 +60,11 @@ ID [[:alpha:]_][[:alnum:]_]*
 "elseif"            { return KW_ELSEIF; }
 "else"              { return KW_ELSE; }
 "end"               { return KW_END; }
+"function"          { return KW_FUNCTION; }
 "::"                { return DOUBLE_COLON; }
 "Int"               { yylval.integer = TYPE_INTEGER; return TYPE; }
 "Bool"              { yylval.integer = TYPE_BOOLEAN; return TYPE; }
-"::Array"           { return KW_ARRAY; }
+"Array"             { return KW_ARRAY; }
 {ID}                { yylval.literal = new string(yytext); return IDENTIFIER; }
 {DIGIT}+            { yylval.integer = atoi(yytext); return INTEGER; }
 \"                  { literal = "\""; BEGIN(literal_parsing); }

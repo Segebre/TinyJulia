@@ -23,6 +23,7 @@
     Expression* expression;
     Statement* statement;
     vector<Expression*>* array_values;
+    vector<struct function_parameter>* function_params;
     string* literal;
     int integer;
     bool boolean;
@@ -32,13 +33,14 @@
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
 %token OPERATOR_SAL OPERATOR_SLR OPERATOR_SAR OPERATOR_OR OPERATOR_XOR OPERATOR_AND OPERATOR_NOT
 %token COMPARISON_GT COMPARISON_LT COMPARISON_EQ COMPARISON_GE COMPARISON_LE COMPARISON_NE COMPARISON_AND COMPARISON_OR OPERATOR_NEG
-%token KW_PRINT KW_PRINTLN KW_ARRAY KW_IF KW_ELSEIF KW_ELSE KW_END
+%token KW_PRINT KW_PRINTLN KW_ARRAY KW_IF KW_ELSEIF KW_ELSE KW_FUNCTION KW_END
 %token LITERAL IDENTIFIER INTEGER BOOLEAN
 %token TYPE OPERATOR_ASSIGN
 
-%type<statement> optional_statements statement_list statement print print_params assign if else
+%type<statement> optional_statements statement_list statement print print_params assign else
 %type<expression> condition condition_ooo_l1 expression expression_ooo_l1 expression_ooo_l2 expression_ooo_l3 expression_ooo_l4 expression_ooo_l5 expression_ooo_l6 final_value
 %type<array_values> array
+%type<function_params> optional_function_params function_params
 %type<literal> LITERAL IDENTIFIER
 %type<integer> INTEGER TYPE
 %type<boolean> BOOLEAN
@@ -74,9 +76,10 @@ statement_list: statement_list statement_separator statement { $$ = $1; ((Statem
     ;
 
 statement: print { $$ = $1; }
-    | assign { $$ = $1; }
-    | if { $$ = $1; }
     | condition { $$ = new ExpressionStatement($1); }
+    | assign { $$ = $1; }
+    | KW_IF condition optional_statements else KW_END { $$ = new IfStatement($2, $3, $4); }
+    | KW_FUNCTION IDENTIFIER PARENTHESIS_LEFT optional_function_params PARENTHESIS_RIGHT DOUBLE_COLON TYPE optional_statements KW_END { $$ = new FunctionStatement(*$2, $7, $4, $8); }
     ;
     
 print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }
@@ -90,24 +93,28 @@ print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct para
     ;
 
 assign: IDENTIFIER DOUBLE_COLON TYPE { $$ = new DeclareStatement(*$1, $3, 1); }
-    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN optional_statement_separators condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $6, new IntegerExpression(1))); }
-    | IDENTIFIER OPERATOR_ASSIGN optional_statement_separators condition { $$ = new SetStatement(*$1, $4, new IntegerExpression(1)); }
-    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN optional_statement_separators condition { $$ = new SetStatement(*$1, $7, $3); }
-    | IDENTIFIER KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT PARENTHESIS_LEFT INTEGER PARENTHESIS_RIGHT { $$ = new DeclareStatement(*$1, $4, $7); }
-    | IDENTIFIER KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_statement_separators BRACKET_LEFT array BRACKET_RIGHT  { 
-                                                                                                            $$ = new StatementBlock();
-                                                                                                            ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $4, $9->size()));
-                                                                                                            int position = 1;
-                                                                                                            for(Expression* expression : *$9)
-                                                                                                                ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, expression, new IntegerExpression(position++)));
-                                                                                                        }
+    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN optional_newlines condition { $$ = new StatementBlock(); ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1)); ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $6, new IntegerExpression(1))); }
+    | IDENTIFIER OPERATOR_ASSIGN optional_newlines condition { $$ = new SetStatement(*$1, $4, new IntegerExpression(1)); }
+    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN optional_newlines condition { $$ = new SetStatement(*$1, $7, $3); }
+    | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT PARENTHESIS_LEFT INTEGER PARENTHESIS_RIGHT { $$ = new DeclareStatement(*$1, $5, $8); }
+    | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_newlines IDENTIFIER {
+                                                                                                                    int size = helper_getSize(*$9, $5);
+                                                                                                                    $$ = new StatementBlock();
+                                                                                                                    ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, size));
+                                                                                                                    for(int position = 1; position <= size; position++)
+                                                                                                                        ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, new IdentifierExpression(*$9, new IntegerExpression(position)), new IntegerExpression(position))); 
+                                                                                                                }
+    | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_newlines BRACKET_LEFT array BRACKET_RIGHT   { 
+                                                                                                                                            $$ = new StatementBlock();
+                                                                                                                                            ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, $10->size()));
+                                                                                                                                            int position = 1;
+                                                                                                                                            for(Expression* expression : *$10)
+                                                                                                                                                ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, expression, new IntegerExpression(position++)));
+                                                                                                                                        }
     ;
 
 array: array COMA optional_newlines condition { $$ = $1; $$->push_back($4); }
     | condition { $$ = new vector<Expression*>; $$->push_back($1); }
-    ;
-
-if: KW_IF condition optional_statements else KW_END { $$ = new IfStatement($2, $3, $4); }
     ;
 
 else: KW_ELSEIF condition optional_statements else { $$ = new IfStatement($2, $3, $4); }
@@ -115,48 +122,56 @@ else: KW_ELSEIF condition optional_statements else { $$ = new IfStatement($2, $3
     | { $$ = new StatementBlock(); }
     ;
 
+optional_function_params: function_params { $$ = $1; }
+    | { $$ = new vector<function_parameter>; }
+    ;
+
+function_params: function_params COMA optional_newlines IDENTIFIER DOUBLE_COLON TYPE { $$ = $1; struct function_parameter fp; fp.name = *$4; fp.type = $6; $$->push_back(fp); }
+    | IDENTIFIER DOUBLE_COLON TYPE { $$ = new vector<function_parameter>; struct function_parameter fp; fp.name = *$1; fp.type = $3; $$->push_back(fp); }
+    ;
+
 condition: condition_ooo_l1 { $$ = $1; }
-    | condition COMPARISON_AND optional_statement_separators condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonAndExpression($1, $4); }
-    | condition COMPARISON_OR optional_statement_separators condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonOrExpression($1, $4); }
+    | condition COMPARISON_AND optional_newlines condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonAndExpression($1, $4); }
+    | condition COMPARISON_OR optional_newlines condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonOrExpression($1, $4); }
     ;
 
 condition_ooo_l1: expression { $$ = $1; }
-    | condition_ooo_l1 COMPARISON_GT optional_statement_separators expression { $$ = new GTExpression($1, $4); }
-    | condition_ooo_l1 COMPARISON_LT optional_statement_separators expression { $$ = new LTExpression($1, $4); }
-    | condition_ooo_l1 COMPARISON_EQ optional_statement_separators expression { $$ = new EQExpression($1, $4); }
-    | condition_ooo_l1 COMPARISON_GE optional_statement_separators expression { $$ = new GEExpression($1, $4); }
-    | condition_ooo_l1 COMPARISON_LE optional_statement_separators expression { $$ = new LEExpression($1, $4); }
-    | condition_ooo_l1 COMPARISON_NE optional_statement_separators expression { $$ = new NEExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_GT optional_newlines expression { $$ = new GTExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_LT optional_newlines expression { $$ = new LTExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_EQ optional_newlines expression { $$ = new EQExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_GE optional_newlines expression { $$ = new GEExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_LE optional_newlines expression { $$ = new LEExpression($1, $4); }
+    | condition_ooo_l1 COMPARISON_NE optional_newlines expression { $$ = new NEExpression($1, $4); }
     ;
 
 expression: expression_ooo_l1 { $$ = $1; }
-    | expression OPERATOR_ADD optional_statement_separators expression_ooo_l1 { $$ = new AddExpression($1, $4); }
-    | expression OPERATOR_SUB optional_statement_separators expression_ooo_l1 { $$ = new SubExpression($1, $4); }
+    | expression OPERATOR_ADD optional_newlines expression_ooo_l1 { $$ = new AddExpression($1, $4); }
+    | expression OPERATOR_SUB optional_newlines expression_ooo_l1 { $$ = new SubExpression($1, $4); }
     ;
 
 expression_ooo_l1: expression_ooo_l2 { $$ = $1; }
-    | expression_ooo_l1 OPERATOR_OR optional_statement_separators expression_ooo_l2 { $$ = new OrExpression($1, $4); }
-    | expression_ooo_l1 OPERATOR_XOR optional_statement_separators expression_ooo_l2 { $$ = new XorExpression($1, $4); }
+    | expression_ooo_l1 OPERATOR_OR optional_newlines expression_ooo_l2 { $$ = new OrExpression($1, $4); }
+    | expression_ooo_l1 OPERATOR_XOR optional_newlines expression_ooo_l2 { $$ = new XorExpression($1, $4); }
     ;
 
 expression_ooo_l2: expression_ooo_l3 { $$ = $1; }
-    | expression_ooo_l2 OPERATOR_SAL optional_statement_separators expression_ooo_l3 { $$ = new SalExpression($1, $4); }
-    | expression_ooo_l2 OPERATOR_SAR optional_statement_separators expression_ooo_l3 { $$ = new SarExpression($1, $4); }
-    | expression_ooo_l2 OPERATOR_SLR optional_statement_separators expression_ooo_l3 { $$ = new SlrExpression($1, $4); }
+    | expression_ooo_l2 OPERATOR_SAL optional_newlines expression_ooo_l3 { $$ = new SalExpression($1, $4); }
+    | expression_ooo_l2 OPERATOR_SAR optional_newlines expression_ooo_l3 { $$ = new SarExpression($1, $4); }
+    | expression_ooo_l2 OPERATOR_SLR optional_newlines expression_ooo_l3 { $$ = new SlrExpression($1, $4); }
     ;
 
 expression_ooo_l3: expression_ooo_l4 { $$ = $1; }
-    | expression_ooo_l3 OPERATOR_AND optional_statement_separators expression_ooo_l4 { $$ = new AndExpression($1, $4); }
+    | expression_ooo_l3 OPERATOR_AND optional_newlines expression_ooo_l4 { $$ = new AndExpression($1, $4); }
     ;
 
 expression_ooo_l4: expression_ooo_l5 { $$ = $1; }
-    | expression_ooo_l4 OPERATOR_MUL optional_statement_separators expression_ooo_l5 { $$ = new MulExpression($1, $4); }
-    | expression_ooo_l4 OPERATOR_DIV optional_statement_separators expression_ooo_l5 { $$ = new DivExpression($1, $4); }
-    | expression_ooo_l4 OPERATOR_MOD optional_statement_separators expression_ooo_l5 { $$ = new ModExpression($1, $4); }
+    | expression_ooo_l4 OPERATOR_MUL optional_newlines expression_ooo_l5 { $$ = new MulExpression($1, $4); }
+    | expression_ooo_l4 OPERATOR_DIV optional_newlines expression_ooo_l5 { $$ = new DivExpression($1, $4); }
+    | expression_ooo_l4 OPERATOR_MOD optional_newlines expression_ooo_l5 { $$ = new ModExpression($1, $4); }
     ;
 
 expression_ooo_l5: expression_ooo_l6 { $$ = $1; }
-    | expression_ooo_l6 OPERATOR_POW optional_statement_separators expression_ooo_l5 { $$ = new PowExpression($1, $4); }
+    | expression_ooo_l6 OPERATOR_POW optional_newlines expression_ooo_l5 { $$ = new PowExpression($1, $4); }
     ;
 
 expression_ooo_l6: final_value { $$ = $1; }

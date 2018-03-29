@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <sstream>
 #include "ast.h"
 
 #define COMPARISON(name, function)                          \
@@ -21,6 +22,7 @@
 extern FILE* yyin;
 extern int yyparse();
 extern vector<string> constant_data;
+extern stringstream functions;
 extern Statement* code_tree;
 
 int main(int argc, char* argv[]){
@@ -61,6 +63,9 @@ int main(int argc, char* argv[]){
          << endl << "\tmov eax, 0" << endl 
          << "\tleave" << endl
          << "\tret" << endl
+         << endl << endl << endl
+         << functions.str() << endl
+         << endl << endl << endl
          << endl << endl << endl << ";----Tiny Julia Helper Code -----;" << endl
          << "TinyJulia_interpret_bool:" << endl
          << "\tcmp eax, 0" << endl

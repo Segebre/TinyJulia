@@ -21,6 +21,12 @@ enum{
     TYPE_BOOLEAN
 };
 
+struct function_parameter{
+    string name;
+    int type;
+    int size;
+};
+
 class AST{};
 
 /////////////////
@@ -39,8 +45,23 @@ protected:
 extern void helper_DeclareVariable(string name, int type, int size);
 extern void helper_SetVariable(string name, int type, Expression* position);
 extern int helper_UseVariable(string name);
+extern void helper_DeclareFunction(string name, vector<struct function_parameter> function_params);
 extern int helper_DeciferType(Expression* left, Expression* right);
+extern int helper_getSize(string name, int type);
 
+class FunctionExpression : public Expression{
+public:
+    FunctionExpression(string name){
+        this->name = name;
+    }
+    void secondpass(){};
+    string genCode();
+    void addParameter(Expression* parameter);
+private:
+    string name;
+    int parameter_count;
+    vector<Expression*> parameters;
+};
 
 class BinaryExpression : public Expression{
 public:
@@ -175,6 +196,23 @@ private:
     bool isprintline;
     vector<struct parameter_type> parameters;
     void genConstantData();
+};
+
+class FunctionStatement : public Statement{
+public:
+    FunctionStatement(string name, int type, vector<struct function_parameter>* function_params, Statement* body){
+        helper_DeclareFunction(name, *function_params);
+        this->name = name;
+        this->type = type;
+        this->body = body;
+    }
+    void secondpass();
+    string genCode(){ return string(""); };
+private:
+    string name;
+    int type;
+    vector<struct function_parameter> function_params;
+    Statement* body;
 };
 
 class IfStatement : public Statement{

@@ -2,6 +2,7 @@
 nonapplicable/
 TinyJulia
 *.tjl
+parser.output
 parser.cpp
 lexer.cpp
 tokens.h

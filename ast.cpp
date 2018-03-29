@@ -30,51 +30,97 @@ struct symbol{
     int size;
 };
 
-vector<string> constant_data;
-map<string, struct symbol> symbol_table;
-static int esp = 0;
+static int global_esp = 0;
+static string current_scope = "";
 static unsigned int if_count = 0;
+vector<string> constant_data;
+stringstream functions;
+map<string, struct symbol> global_symbol_table;
+map<string, map<string, struct symbol> >local_symbol_table;
+map<string, int> local_esp;
+
+int helper_getSize(string name, int type){
+    if(!global_symbol_table.count(name)){
+        std::cerr << "ERR: Variable `" << name << "` does not exist!" << std::endl;
+        exit(1);
+    }
+    if(global_symbol_table[name].type != type){
+        std::cerr << "ERR: Variable `" << name << "` does not match type!" << std::endl;
+        exit(1);
+    }
+    return global_symbol_table[name].size;
+}
 
 void helper_DeclareVariable(string name, int type, int size){
-    if(symbol_table.count(name)){
+    if(global_symbol_table.count(name)){
         std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
+        exit(1);
+    }
+    if(size < 1){
+        std::cerr << "ERR: Size of Array cannot be less than 1!" << std::endl;
         exit(1);
     }
     struct symbol symbol;
     symbol.type = type;
-    symbol.position = esp-size*4;
+    symbol.position = global_esp-size*4;
     symbol.size = size;
-    esp -= symbol.position;
-    symbol_table[name] = symbol;
+    global_esp += symbol.position;
+    global_symbol_table[name] = symbol;
 }
 
 void helper_SetVariable(string name, int type, Expression* position){
-    if(!symbol_table.count(name)){
+    if(!global_symbol_table.count(name)){
         std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
         exit(1);
     }
-    if(symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+    if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
         std::cerr << "ERR: Incompatible types!" << std::endl;
         exit(1);
     }
 }
 
 int helper_UseVariable(string name){
-    if(!symbol_table.count(name)){
+    if(!global_symbol_table.count(name)){
         std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
         exit(1);
     }
-    return symbol_table[name].type;
+    return global_symbol_table[name].type;
 }
 
 bool helper_isArray(string name){
-    if(!symbol_table.count(name)){
+    if(!global_symbol_table.count(name)){
         std::cerr << "Variable first use cannot be before its declaration!" << std::endl;
         exit(1);
     }
-    if(symbol_table[name].size > 1)
+    if(global_symbol_table[name].size > 1)
         return true;
     return false;
+}
+
+void helper_DeclareFunction(string name, vector<struct function_parameter> function_params){
+    if(current_scope != ""){
+        std::cerr << "Function declaration inside a function not allowed!" << std::endl;
+        exit(1);
+    }
+    if(global_symbol_table.count(name)){
+        std::cerr << "Variable with this name already exists!" << std::endl;
+        exit(1);
+    }
+    if(local_symbol_table.count(name)){
+        std::cerr << "Function redeclaration not allowed!" << std::endl;
+        exit(1);
+    }
+
+    int offset = 8;
+    for(function_parameter fp : function_params){
+        struct symbol symbol;
+        symbol.type = fp.type;
+        symbol.position = offset;
+        symbol.size = fp.size;
+        offset += symbol.size*4;
+        local_symbol_table[name][fp.name] = symbol;
+    }
+
 }
 
 int helper_DeciferType(Expression* left, Expression* right){
@@ -424,7 +470,7 @@ void IdentifierExpression::genCode(struct context& context){
     code << position_context.code << " ; " << position_context.comment << endl
          << "\tpop eax" << endl
          << "\tdec eax" << " ; position-1 for indexing from 0" << endl
-         << "\tpush dword [ebp" << (symbol_table[name].position >= 0?"+":"") << symbol_table[name].position << "+eax*4]";
+         << "\tpush dword [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+eax*4]";
 
     context.code = code.str();
     context.comment = name;
@@ -493,6 +539,18 @@ string PrintStatement::genCode(){
     return code.str();
 }
 
+void FunctionStatement::secondpass(){
+    body->secondpass();
+    current_scope = name;
+    functions << name << ":" << endl
+        << "\tpush ebp" << endl
+        << "\tmov ebp, esp" << endl
+        << body->genCode() << endl
+        << "\tleave" << endl
+        << "\tret" << endl;
+    current_scope = "";
+}
+
 string IfStatement::genCode(){
     stringstream code;
     struct context condition_context;
@@ -533,7 +591,7 @@ string SetStatement::genCode(){
          << "\tpop eax" << " ; " << expression_context.comment << endl
          << "\tpop ecx" << " ; " << position_context.comment << endl
          << "\tdec ecx" << " ; position-1 for indexing from 0" << endl
-         << "\tmov [ebp" << (symbol_table[name].position>0?"+":"") << symbol_table[name].position << "+ecx*4], eax" << endl;
+         << "\tmov [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+ecx*4], eax" << endl;
 
     return code.str();
 }

@@ -7,7 +7,7 @@ $(TARGET): $(OBJECTS)
 	g++ -std=c++11 -g -o $@ $^
 
 parser.cpp: parser.y
-	bison --defines=tokens.h -o $@ $^
+	bison --defines=tokens.h --report=solved -o $@ $^
 
 lexer.cpp: lexer.l
 	flex -o $@ $^
@@ -18,7 +18,7 @@ lexer.cpp: lexer.l
 clean:
 	rm -f $(TARGET)
 	rm -f $(OBJECTS)
-	rm -f parser.cpp lexer.cpp tokens.h
+	rm -f parser.cpp lexer.cpp tokens.h parser.output
 	rm -f run.asm run.o run
 
 run: $(TARGET)
