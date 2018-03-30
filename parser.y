@@ -87,50 +87,17 @@ print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((Pri
     ;
 
 print_params: print_params COMA optional_newlines LITERAL { $$ = $1; struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$4); ((PrintStatement*)$$)->addParameter(parameter);  }
-    | print_params COMA optional_newlines condition { $$ = $1; struct parameter_type parameter; parameter.type = $4->getType(); parameter.expression = $4; ((PrintStatement*)$$)->addParameter(parameter);  }
+    | print_params COMA optional_newlines condition { $$ = $1; struct parameter_type parameter; parameter.type = -1; parameter.expression = $4; ((PrintStatement*)$$)->addParameter(parameter);  }
     | LITERAL { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = TYPE_LITERAL; parameter.literal = new string(*$1); ((PrintStatement*)$$)->addParameter(parameter); }
-    | condition { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = $1->getType(); parameter.expression = $1; ((PrintStatement*)$$)->addParameter(parameter); }
+    | condition { $$ = new PrintStatement(); struct parameter_type parameter; parameter.type = -1; parameter.expression = $1; ((PrintStatement*)$$)->addParameter(parameter); }
     ;
 
 assign: IDENTIFIER DOUBLE_COLON TYPE { $$ = new DeclareStatement(*$1, $3, 1); }
-    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN optional_newlines condition {
-        if($6->getSize() > 1){
-            std::cerr << "ERR: Incompatible sizes on `" << *$1 << "` assignation!" << std::endl;
-            exit(1);
-        }
-        $$ = new StatementBlock();
-        ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $3, 1));
-        ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, $6, new IntegerExpression(1)));
-    }
-    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN optional_newlines condition {
-        if($7->getSize() > 1){
-            std::cerr << "ERR: Incompatible sizes on `" << *$1 << "` assignation!" << std::endl;
-            exit(1);
-        }
-        $$ = new SetStatement(*$1, $7, $3);
-    }
+    | IDENTIFIER DOUBLE_COLON TYPE OPERATOR_ASSIGN optional_newlines condition { $$ = new AssignStatement(1, *$1, new IntegerExpression(1), $3, $6); }
+    | IDENTIFIER BRACKET_LEFT condition BRACKET_RIGHT OPERATOR_ASSIGN optional_newlines condition { $$ = new AssignStatement(2, *$1, $3, -1, $7); }
     | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT PARENTHESIS_LEFT INTEGER PARENTHESIS_RIGHT { $$ = new DeclareStatement(*$1, $5, $8); }
-    | IDENTIFIER OPERATOR_ASSIGN optional_newlines condition {
-        int size = $4->getSize();
-        if(size != helper_getSize(*$1, TYPE_BOOLEAN)){
-            std::cerr << "ERR: Incompatible sizes on `" << *$1 << "` assignation!" << std::endl;
-            exit(1);
-        }
-        if(size == 1)
-            $$ = new SetStatement(*$1, $4, new IntegerExpression(1));
-        else{
-            $$ = new StatementBlock();
-            for(int position = 1; position <= size; position++)
-                ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, new IdentifierExpression(((IdentifierExpression*)$4)->getName(), new IntegerExpression(position)), new IntegerExpression(position)));
-        }
-    }
-    | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_newlines IDENTIFIER {
-        int size = helper_getSize(*$9, $5);
-        $$ = new StatementBlock();
-        ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, size));
-        for(int position = 1; position <= size; position++)
-            ((StatementBlock*)$$)->addStatement(new SetStatement(*$1, new IdentifierExpression(*$9, new IntegerExpression(position)), new IntegerExpression(position))); 
-    }
+    | IDENTIFIER OPERATOR_ASSIGN optional_newlines condition { $$ = new AssignStatement(3, *$1, new IntegerExpression(1), -1, $4); } //position useless
+    | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_newlines IDENTIFIER { $$ = new AssignStatement(4, *$1, new IntegerExpression(0), $5, new IdentifierExpression(*$9)); }  //position useless
     | IDENTIFIER DOUBLE_COLON KW_ARRAY CURLY_LEFT TYPE CURLY_RIGHT OPERATOR_ASSIGN optional_newlines BRACKET_LEFT array BRACKET_RIGHT   { 
         $$ = new StatementBlock();
         ((StatementBlock*)$$)->addStatement(new DeclareStatement(*$1, $5, $10->size()));

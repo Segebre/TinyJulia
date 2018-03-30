@@ -45,15 +45,26 @@ void helper_resetScope(){
 }
 
 int helper_getSize(string name, int type){
-    if(!global_symbol_table.count(name)){
+    if(current_scope != ""){
+        if(local_symbol_table[current_scope].count(name)){
+            if(local_symbol_table[current_scope][name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+                std::cerr << "ERR: Variable `" << name << "` does not match type!" << std::endl;
+                exit(1);
+            }
+            return local_symbol_table[current_scope][name].size;
+        }
+    }
+    if(global_symbol_table.count(name)){
+        if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+            std::cerr << "ERR: Variable `" << name << "` does not match type!" << std::endl;
+            exit(1);
+        }
+        return global_symbol_table[name].size;
+    }
+    else{
         std::cerr << "ERR: Variable `" << name << "` does not exist!" << std::endl;
         exit(1);
     }
-    if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
-        std::cerr << "ERR: Variable `" << name << "` does not match type!" << std::endl;
-        exit(1);
-    }
-    return global_symbol_table[name].size;
 }
 
 void helper_DeclareVariable(string name, int type, int size){
@@ -531,7 +542,7 @@ void IdentifierExpression::genCode(struct context& context){
             code << "\tpush dword [ebp" << (local_symbol_table[current_scope][name].position >= 0?"+":"") << local_symbol_table[current_scope][name].position << "+eax*4]";
         else if(global_symbol_table.count(name)){
             code << "\tmov ecx, [ebp] ; change of scope" << endl
-                 << "\tpush dword [ecx" << (local_symbol_table[current_scope][name].position >= 0?"+":"") << local_symbol_table[current_scope][name].position << "+eax*4]";
+                 << "\tpush dword [ecx" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+eax*4]";
         }
     }
 
@@ -579,6 +590,15 @@ string ExpressionStatement::genCode(){
          << "\tpop eax ; Unused result lost" << endl;
     return code.str();
 };
+
+void PrintStatement::secondpass(){ 
+    for(vector<struct parameter_type>::iterator parameter = parameters.begin(); parameter != parameters.end(); parameter++)
+        if(parameter->type == -1){
+            parameter->expression->firstpass();
+            parameter->type = parameter->expression->getType();
+        }
+    this->genConstantData();
+}
 
 void PrintStatement::genConstantData(){
     print_id = constant_data.size();
@@ -705,4 +725,57 @@ string SetStatement::genCode(){
                 << name << "[" << position_context.comment << "]" << "=" << expression_context.comment << endl;
     }
     return code.str();
+}
+
+void AssignStatement::secondpass(){
+    position->firstpass();
+    rightside->firstpass();
+
+    switch(variant){
+        case 1:{
+            if(rightside->getSize() > 1){
+                std::cerr << "ERR: Incompatible sizes on `" << name << "` assignation!" << std::endl;
+                exit(1);
+            }
+            statement = new StatementBlock();
+            ((StatementBlock*)statement)->addStatement(new DeclareStatement(name, type, 1));
+            ((StatementBlock*)statement)->addStatement(new SetStatement(name, rightside, position));
+            statement->secondpass();
+            break;
+        }
+        case 2:{
+            if(rightside->getSize() > 1){
+                std::cerr << "ERR: Incompatible sizes on `" << name << "` assignation!" << std::endl;
+                exit(1);
+            }
+            statement = new SetStatement(name, rightside, position);
+            statement->secondpass();
+            break;
+        }
+        case 3:{
+            int size = rightside->getSize();
+            if(size != helper_getSize(name, TYPE_BOOLEAN)){
+                std::cerr << "ERR: Incompatible sizes on `" << name << "` assignation!" << std::endl;
+                exit(1);
+            }
+            if(size == 1)
+                statement = new SetStatement(name, rightside, position);
+            else{
+                statement = new StatementBlock();
+                for(int index = 1; index <= size; index++)
+                    ((StatementBlock*)statement)->addStatement(new SetStatement(name, new IdentifierExpression(((IdentifierExpression*)rightside)->getName(), new IntegerExpression(index)), new IntegerExpression(index)));
+            }
+            statement->secondpass();
+            break;
+        }
+        case 4:{
+            int size = helper_getSize(((IdentifierExpression*)rightside)->getName(), type);
+            statement = new StatementBlock();
+            ((StatementBlock*)statement)->addStatement(new DeclareStatement(name, type, size));
+            for(int pos = 1; pos <= size; pos++)
+                ((StatementBlock*)statement)->addStatement(new SetStatement(name, new IdentifierExpression(((IdentifierExpression*)rightside)->getName(), new IntegerExpression(pos)), new IntegerExpression(pos))); 
+            statement->secondpass();
+            break;
+        }
+    }
 }

@@ -141,12 +141,12 @@ public:
         this->position = NULL;
     }
     void firstpass(){
+        this->type = helper_UseVariable(name);
         if(position == NULL){
             this->array = helper_getSize(name, this->type) == 1?false:true;
-            this->position = new IntegerExpression(array);
+            this->position = new IntegerExpression(getSize());
         }
         this->position->firstpass();
-        this->type = helper_UseVariable(name);
     }
     void genCode(struct context& context);
     string getName(){ return name; }
@@ -206,7 +206,7 @@ private:
 
 class PrintStatement : public Statement{
 public:
-    void secondpass(){ this->genConstantData(); }
+    void secondpass();
     void printline(bool isprintline){ this->isprintline = isprintline; }
     void addParameter(struct parameter_type& parameter){ this->parameters.push_back(parameter); }
     string genCode();
@@ -279,6 +279,25 @@ private:
     Expression* position;
 };
 
+class AssignStatement : public Statement{
+public:
+    AssignStatement(int variant, string name, Expression* position, int type, Expression* rightside){
+        this->variant = variant;
+        this->name = name;
+        this->position = position;
+        this->type = type;
+        this->rightside = rightside;
+    }
+    void secondpass();
+    string genCode(){ return statement->genCode(); }
+private:
+    int variant;
+    string name;
+    Expression* position;
+    int type;
+    Expression* rightside;
+    Statement* statement;
+};
 
 struct context{
     string code;
