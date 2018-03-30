@@ -30,6 +30,17 @@ struct symbol{
     int size;
 };
 
+struct mini_scope{
+    enum{
+        NONE,
+        IF,
+        WHILE,
+        FOR
+    };
+    int type;
+    int id;
+};
+
 static int global_esp = 0;
 static string current_scope = "";
 static unsigned int if_count = 0;
@@ -39,6 +50,8 @@ map<string, struct symbol> global_symbol_table;
 map<string, map<string, struct symbol> >local_symbol_table;
 map<string, int> local_esp;
 map<string, vector<struct function_parameter>*> sanity_check;
+map<string, int>function_type;
+static struct mini_scope current_mini_scope = {mini_scope::NONE, 0};
 
 void helper_resetScope(){
     current_scope = "";
@@ -265,7 +278,7 @@ void PowExpression::genCode(struct context& context){
          << context_left.code << endl
          << "\tcall TinyJulia_exponenciation" << endl
          << "\tadd esp, 8" << endl
-         << "\tpush eax" << " ; " << context_left.comment << " ^ " << context_right.comment << endl;
+         << "\tpush eax" << " ; " << context_left.comment << " ^ " << context_right.comment;
     
     context.code = code.str();
     context.comment = "Exponentiation result";
@@ -515,12 +528,32 @@ void IdentifierExpression::genCode(struct context& context){
     context.is_printable = true;
 }
 
-void FunctionExpression::addParameter(Expression* parameter){
-    int index = parameters.size();
-    if((sanity_check[name]->at(index).type == TYPE_BOOLEAN && parameter->getType() != TYPE_BOOLEAN) || (sanity_check[name]->at(index).size != parameter->getSize())){
-        std::cerr << "ERR: Parameter at index `" << index << "` is not compatible with declaration!" << std::endl;
+ void FunctionExpression::secondpass(){
+    for(Expression* parameter : parameters)
+        parameter->secondpass();
+
+    if(sanity_check[name]->size() != parameters.size()){
+        std::cerr << "ERR: Expected " << sanity_check[name]->size() << " parameter(s) but found " << parameters.size() << std::endl;
         exit(1);
     }
+
+    for(int index = 0; index < sanity_check[name]->size(); index++){
+        if(((*sanity_check[name])[index].type == TYPE_BOOLEAN) && (parameters[index]->getType() != TYPE_BOOLEAN)){
+            std::cerr << "ERR: Incompatible types on parameter `" << (*sanity_check[name])[index].name << "`" << std::endl;
+            exit(1);
+        }
+        else if(parameters[index]->getSize() != (*sanity_check[name])[index].size){
+            int temp = parameters[index]->getSize();
+            temp = (*sanity_check[name])[index].size;
+            std::cerr << "ERR: Incompatible sizes on parameter `" << (*sanity_check[name])[index].name << "`, expected " << (*sanity_check[name])[index].size << " found " << parameters[index]->getSize() << std::endl;
+            exit(1);
+        }
+    }
+
+    type = function_type[name];
+}
+
+void FunctionExpression::addParameter(Expression* parameter){
     parameters.push_back(parameter);
 }
 
@@ -634,9 +667,14 @@ void FunctionStatement::secondpass(){
     }
 
     sanity_check[name] = function_params;
+    function_type[name] = type;
 
     int offset = 8;
     for(function_parameter fp : *function_params){
+        if(local_symbol_table[name].count(fp.name)){
+            std::cerr << "Err: Found repeated parameter names on function declaration!" << std::endl;
+            exit(1);
+        }
         struct symbol symbol;
         symbol.type = fp.type;
         symbol.position = offset;
@@ -662,10 +700,65 @@ string FunctionStatement::genCode(){
     return string("");
 }
 
+void ReturnStatement::secondpass(){
+    value->secondpass();
+    if(current_scope != "")
+        if(function_type[current_scope] == TYPE_BOOLEAN && value->getType() != TYPE_BOOLEAN){
+            std::cerr << "Err: Return type mismatch for function `" << current_scope << "`!" << std::endl;
+            exit(1);
+        }
+}
+
+string ReturnStatement::genCode(){
+    stringstream code;
+    struct context context;
+    value->genCode(context);
+
+    if(current_scope == ""){
+        switch(current_mini_scope.type){
+            case mini_scope::NONE: code << "" << endl; break;
+            case mini_scope::IF: code << "\tjmp if_end_" << current_mini_scope.id << endl; break;
+            case mini_scope::WHILE: code << "\tjmp while_end_" << current_mini_scope.id << endl; break;
+            case mini_scope::FOR: code << "\tjmp for_end_" << current_mini_scope.id << endl; break;
+        }
+    }
+    else
+        code << context.code << endl
+             << "\tpop eax, " << " ; " << context.comment << endl
+             << "\tleave" << endl
+             << "\tret" << endl;
+
+    return code.str();
+}
+
+void IfStatement::secondpass(){
+    if_id = if_count++;
+    bool reset = false;
+    if(current_mini_scope.type == mini_scope::NONE){
+        current_mini_scope.type = mini_scope::IF;
+        current_mini_scope.id = if_id;
+        reset = true;
+    }
+    
+    condition->secondpass();
+    trueBlock->secondpass();
+    falseBlock->secondpass();
+    
+    if(reset){
+        current_mini_scope.type = mini_scope::NONE;
+        current_mini_scope.id = 0;
+    }
+}
+
 string IfStatement::genCode(){
     stringstream code;
     struct context condition_context;
-    int if_id = if_count++;
+    bool reset = false;
+    if(current_mini_scope.type == mini_scope::NONE){
+        current_mini_scope.type = mini_scope::IF;
+        current_mini_scope.id = if_id;
+        reset = true;
+    }
 
     condition->genCode(condition_context);
 
@@ -680,11 +773,16 @@ string IfStatement::genCode(){
          << falseBlock->genCode() << endl
          << "if_end_" << if_id << ":" << endl;
         
+    if(reset){
+        current_mini_scope.type = mini_scope::NONE;
+        current_mini_scope.id = 0;
+    }
+    
     return code.str();
 }
 
 void DeclareStatement::secondpass(){
-        struct symbol symbol;
+    struct symbol symbol;
     symbol.type = type;
     symbol.size = size;
     
@@ -703,6 +801,10 @@ void DeclareStatement::secondpass(){
     }
     else{
         if(local_symbol_table[current_scope].count(name)){
+            std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
+            exit(1);
+        }
+        else if(global_symbol_table.count(name)){
             std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
             exit(1);
         }

@@ -3,6 +3,7 @@
 }
 
 %{
+    #define YYERROR_VERBOSE 1
     #include <iostream>
     #include "ast.h"
 
@@ -33,7 +34,7 @@
 %token OPERATOR_ADD OPERATOR_SUB OPERATOR_MUL OPERATOR_DIV OPERATOR_MOD OPERATOR_POW
 %token OPERATOR_SAL OPERATOR_SLR OPERATOR_SAR OPERATOR_OR OPERATOR_XOR OPERATOR_AND OPERATOR_NOT
 %token COMPARISON_GT COMPARISON_LT COMPARISON_EQ COMPARISON_GE COMPARISON_LE COMPARISON_NE COMPARISON_AND COMPARISON_OR OPERATOR_NEG
-%token KW_PRINT KW_PRINTLN KW_ARRAY KW_IF KW_ELSEIF KW_ELSE KW_FUNCTION KW_END
+%token KW_PRINT KW_PRINTLN KW_ARRAY KW_IF KW_ELSEIF KW_ELSE KW_FUNCTION KW_RETURN KW_END
 %token LITERAL IDENTIFIER INTEGER BOOLEAN
 %token TYPE OPERATOR_ASSIGN
 
@@ -80,6 +81,7 @@ statement: print { $$ = $1; }
     | assign { $$ = $1; }
     | KW_IF condition optional_statements else KW_END { $$ = new IfStatement($2, $3, $4); }
     | KW_FUNCTION IDENTIFIER PARENTHESIS_LEFT optional_function_statement_params PARENTHESIS_RIGHT DOUBLE_COLON TYPE optional_statements KW_END { $$ = new FunctionStatement(*$2, $7, $4, $8); }
+    | KW_RETURN condition { $$ = new ReturnStatement($2); }
     ;
     
 print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }
@@ -120,8 +122,8 @@ optional_function_statement_params: function_statement_params { $$ = $1; }
     | { $$ = new vector<function_parameter>; }
     ;
 
-function_statement_params: function_statement_params COMA optional_newlines IDENTIFIER DOUBLE_COLON TYPE { $$ = $1; struct function_parameter fp; fp.name = *$4; fp.type = $6; $$->push_back(fp); }
-    | IDENTIFIER DOUBLE_COLON TYPE { $$ = new vector<function_parameter>; struct function_parameter fp; fp.name = *$1; fp.type = $3; $$->push_back(fp); }
+function_statement_params: function_statement_params COMA optional_newlines IDENTIFIER DOUBLE_COLON TYPE { $$ = $1; struct function_parameter fp; fp.name = *$4; fp.type = $6; fp.size = 1; $$->push_back(fp); }
+    | IDENTIFIER DOUBLE_COLON TYPE { $$ = new vector<function_parameter>; struct function_parameter fp; fp.name = *$1; fp.type = $3; fp.size = 1; $$->push_back(fp); }
     ;
 
 condition: condition_ooo_l1 { $$ = $1; }
@@ -187,8 +189,8 @@ optional_function_expression_params: function_expression_params { $$ = $1; }
     | { $$ = new FunctionExpression(); }
     ;
 
-function_expression_params: function_expression_params COMA optional_newlines final_value { $$ = $1; ((FunctionExpression*)$$)->addParameter($4); }
-    | final_value { $$ = new FunctionExpression(); ((FunctionExpression*)$$)->addParameter($1); }
+function_expression_params: function_expression_params COMA optional_newlines condition { $$ = $1; ((FunctionExpression*)$$)->addParameter($4); }
+    | condition { $$ = new FunctionExpression(); ((FunctionExpression*)$$)->addParameter($1); }
     ;
 
 %%

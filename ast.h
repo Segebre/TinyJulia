@@ -178,7 +178,7 @@ public:
     void addName(string name){ this->name = name; }
     void addParameter(Expression* parameter);
     void genCode(struct context& context);
-    void secondpass(){ for(Expression* parameter : parameters) parameter->secondpass(); }
+    void secondpass();
 private:
     string name;
     int parameter_count;
@@ -247,6 +247,17 @@ private:
     Statement* body;
 };
 
+class ReturnStatement : public Statement{
+public:
+    ReturnStatement(Expression* value){
+        this->value = value;
+    }
+    void secondpass();
+    string genCode();
+private:
+    Expression* value;
+};
+
 class IfStatement : public Statement{
 public:
     IfStatement(Expression* condition, Statement* trueBlock, Statement* falseBlock){
@@ -254,9 +265,10 @@ public:
         this->trueBlock = trueBlock;
         this->falseBlock = falseBlock;
     }
-    void secondpass(){ condition->secondpass(); trueBlock->secondpass(); falseBlock->secondpass(); }
+    void secondpass();
     string genCode();
 private:
+    int if_id;
     Expression* condition;
     Statement* trueBlock;
     Statement* falseBlock;
