@@ -67,84 +67,6 @@ int helper_getSize(string name, int type){
     }
 }
 
-void helper_DeclareVariable(string name, int type, int size){
-    struct symbol symbol;
-    symbol.type = type;
-    symbol.size = size;
-    
-    if(size < 1){
-        std::cerr << "ERR: Size of Array cannot be less than 1!" << std::endl;
-        exit(1);
-    }
-    if(current_scope == ""){
-        if(global_symbol_table.count(name)){
-            std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
-            exit(1);
-        }
-        symbol.position = global_esp-size*4;
-        global_esp = symbol.position;
-        global_symbol_table[name] = symbol;
-    }
-    else{
-        if(local_symbol_table[current_scope].count(name)){
-            std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
-            exit(1);
-        }
-        symbol.position = local_esp[current_scope]-size*4;
-        local_esp[current_scope] = symbol.position;
-        local_symbol_table[current_scope][name] = symbol;
-    }
-}
-
-void helper_SetVariable(string name, int type, Expression* position){
-    if(current_scope == ""){
-        if(!global_symbol_table.count(name)){
-            std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
-            exit(1);
-        }
-        else if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
-            std::cerr << "ERR: Incompatible types!" << std::endl;
-            exit(1);
-        }
-    }
-    else{
-        if(!local_symbol_table[current_scope].count(name)){
-            if(!global_symbol_table.count(name)){
-                std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
-                exit(1);
-            }
-            else if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
-                std::cerr << "ERR: Incompatible types!" << std::endl;
-                exit(1);
-            }
-        }
-        else if(local_symbol_table[current_scope][name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
-            std::cerr << "ERR: Incompatible types!" << std::endl;
-            exit(1);
-        }
-    }
-}
-
-int helper_UseVariable(string name){
-    if(current_scope == ""){
-        if(!global_symbol_table.count(name)){
-            std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
-            exit(1);
-        }
-        return global_symbol_table[name].type;
-    }
-    else{
-        if(local_symbol_table[current_scope].count(name))
-            return local_symbol_table[current_scope][name].type;
-        else if(global_symbol_table.count(name))
-            return global_symbol_table[name].type;
-        else{
-            std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
-            exit(1);
-        }
-    }
-}
-
 bool helper_isArray(string name){
     if(!global_symbol_table.count(name)){
         std::cerr << "Variable first use cannot be before its declaration!" << std::endl;
@@ -153,38 +75,6 @@ bool helper_isArray(string name){
     if(global_symbol_table[name].size > 1)
         return true;
     return false;
-}
-
-void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params, Statement* body){
-    if(current_scope != ""){
-        std::cerr << "Function declaration inside a function not allowed!" << std::endl;
-        exit(1);
-    }
-    if(global_symbol_table.count(name)){
-        std::cerr << "Variable with this name already exists!" << std::endl;
-        exit(1);
-    }
-    if(local_symbol_table.count(name)){
-        std::cerr << "Function redeclaration not allowed!" << std::endl;
-        exit(1);
-    }
-
-    sanity_check[name] = function_params;
-
-    int offset = 8;
-    for(function_parameter fp : *function_params){
-        struct symbol symbol;
-        symbol.type = fp.type;
-        symbol.position = offset;
-        symbol.size = fp.size;
-        offset += symbol.size*4;
-        local_symbol_table[name][fp.name] = symbol;
-    }
-
-    current_scope = name;
-    body->secondpass();
-    current_scope = "";
-
 }
 
 int helper_DeciferType(Expression* left, Expression* right){
@@ -526,6 +416,32 @@ void BooleanExpression::genCode(struct context& context){
     context.is_printable = true;
 }
 
+void IdentifierExpression::firstpass(){
+        if(current_scope == ""){
+            if(!global_symbol_table.count(name)){
+                std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+                exit(1);
+            }
+            type = global_symbol_table[name].type;
+        }
+        else{
+            if(local_symbol_table[current_scope].count(name))
+                type = local_symbol_table[current_scope][name].type;
+            else if(global_symbol_table.count(name))
+                type = global_symbol_table[name].type;
+            else{
+                std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+                exit(1);
+            }
+        }
+
+        if(position == NULL){
+            this->array = helper_getSize(name, this->type) == 1?false:true;
+            this->position = new IntegerExpression(getSize());
+        }
+        this->position->firstpass();
+    }
+
 void IdentifierExpression::genCode(struct context& context){
     stringstream code;
     stringstream comment;
@@ -657,6 +573,37 @@ string PrintStatement::genCode(){
     return code.str();
 }
 
+void FunctionStatement::secondpass(){
+    if(current_scope != ""){
+        std::cerr << "Function declaration inside a function not allowed!" << std::endl;
+        exit(1);
+    }
+    if(global_symbol_table.count(name)){
+        std::cerr << "Variable with this name already exists!" << std::endl;
+        exit(1);
+    }
+    if(local_symbol_table.count(name)){
+        std::cerr << "Function redeclaration not allowed!" << std::endl;
+        exit(1);
+    }
+
+    sanity_check[name] = function_params;
+
+    int offset = 8;
+    for(function_parameter fp : *function_params){
+        struct symbol symbol;
+        symbol.type = fp.type;
+        symbol.position = offset;
+        symbol.size = fp.size;
+        offset += symbol.size*4;
+        local_symbol_table[name][fp.name] = symbol;
+    }
+
+    current_scope = name;
+    body->secondpass();
+    current_scope = "";
+}
+
 string FunctionStatement::genCode(){
     current_scope = name;
     functions << name << ":" << endl
@@ -690,10 +637,70 @@ string IfStatement::genCode(){
     return code.str();
 }
 
+void DeclareStatement::secondpass(){
+        struct symbol symbol;
+    symbol.type = type;
+    symbol.size = size;
+    
+    if(size < 1){
+        std::cerr << "ERR: Size of Array cannot be less than 1!" << std::endl;
+        exit(1);
+    }
+    if(current_scope == ""){
+        if(global_symbol_table.count(name)){
+            std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
+            exit(1);
+        }
+        symbol.position = global_esp-size*4;
+        global_esp = symbol.position;
+        global_symbol_table[name] = symbol;
+    }
+    else{
+        if(local_symbol_table[current_scope].count(name)){
+            std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
+            exit(1);
+        }
+        symbol.position = local_esp[current_scope]-size*4;
+        local_esp[current_scope] = symbol.position;
+        local_symbol_table[current_scope][name] = symbol;
+    }
+}
+
 string DeclareStatement::genCode(){
     stringstream code;
     code << "\tsub esp, " << size*4 << " ; Declaration of `" << name << "`";
     return code.str();
+}
+
+void SetStatement::secondpass(){
+    expression->firstpass();
+    position->firstpass();
+    if(current_scope == ""){
+        if(!global_symbol_table.count(name)){
+            std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+            exit(1);
+        }
+        else if(global_symbol_table[name].type == TYPE_BOOLEAN && expression->getType() != TYPE_BOOLEAN){
+            std::cerr << "ERR: Incompatible types!" << std::endl;
+            exit(1);
+        }
+    }
+    else{
+        if(!local_symbol_table[current_scope].count(name)){
+            if(!global_symbol_table.count(name)){
+                std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+                exit(1);
+            }
+            else if(global_symbol_table[name].type == TYPE_BOOLEAN && expression->getType() != TYPE_BOOLEAN){
+                std::cerr << "ERR: Incompatible types!" << std::endl;
+                exit(1);
+            }
+        }
+        else if(local_symbol_table[current_scope][name].type == TYPE_BOOLEAN && expression->getType() != TYPE_BOOLEAN){
+            std::cerr << "ERR: Incompatible types!" << std::endl;
+            exit(1);
+        }
+    }
 }
 
 string SetStatement::genCode(){

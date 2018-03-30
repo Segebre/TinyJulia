@@ -44,10 +44,7 @@ protected:
     int type;
 };
 
- 
-extern void helper_DeclareVariable(string name, int type, int size);
 extern void helper_SetVariable(string name, int type, Expression* position);
-extern int helper_UseVariable(string name);
 extern int helper_DeciferType(Expression* left, Expression* right);
 extern int helper_getSize(string name, int type);
 extern void helper_resetScope();
@@ -140,14 +137,7 @@ public:
         this->name = name;
         this->position = NULL;
     }
-    void firstpass(){
-        this->type = helper_UseVariable(name);
-        if(position == NULL){
-            this->array = helper_getSize(name, this->type) == 1?false:true;
-            this->position = new IntegerExpression(getSize());
-        }
-        this->position->firstpass();
-    }
+    void firstpass();
     void genCode(struct context& context);
     string getName(){ return name; }
     int getSize(){ return this->array?helper_getSize(name, this->type):1; }
@@ -178,8 +168,6 @@ public:
     virtual string genCode() = 0;
     virtual void secondpass(){};
 };
-
-extern void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params, Statement* body);
 
 class StatementBlock : public Statement{
 public:
@@ -225,7 +213,7 @@ public:
         this->function_params = function_params;
         this->body = body;
     }
-    void secondpass(){ helper_DeclareFunction(name, function_params, body); }
+    void secondpass();
     string genCode();
 private:
     string name;
@@ -256,7 +244,7 @@ public:
         this->type = type;
         this->size = size;
     }
-    void secondpass(){ helper_DeclareVariable(name, type, size); }
+    void secondpass();
     string genCode();
 private:
     string name;
@@ -271,7 +259,7 @@ public:
         this->expression = expression;
         this->position = position;
     }
-    void secondpass(){ expression->firstpass(); position->firstpass(); helper_SetVariable(name, expression->getType(), position); }
+    void secondpass();
     string genCode();
 private:
     string name;
