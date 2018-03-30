@@ -5,7 +5,7 @@
     class name##Expression : public BinaryExpression{                                                                       \
     public:                                                                                                                 \
         name##Expression(Expression* left, Expression* right) : BinaryExpression(left, right){}                             \
-        void firstpass(){ left->firstpass(); right->firstpass(); this->type = valuetype; };                                 \
+        void secondpass(){ left->secondpass(); right->secondpass(); this->type = valuetype; };                                 \
         void genCode(struct context& context);                                                                              \
     };
 
@@ -28,7 +28,10 @@ struct function_parameter{
     int size;
 };
 
-class AST{};
+class AST{
+public:
+    virtual void secondpass() = 0;
+};
 
 /////////////////
 // Expressions //
@@ -38,7 +41,6 @@ class Expression : public AST{
 public:
     virtual void genCode(struct context& context) = 0;
     int getType(){ return this->type; }
-    virtual void firstpass() = 0;
     virtual int getSize(){ return 1; }
 protected:
     int type;
@@ -88,7 +90,7 @@ public:
     NotExpression(Expression* value){
         this->value = value;
     }
-    void firstpass(){ value->firstpass(); this->type = value->getType(); };
+    void secondpass(){ value->secondpass(); this->type = value->getType(); };
     void genCode(struct context& context);
 private:
     Expression* value;
@@ -99,7 +101,7 @@ public:
     NegExpression(Expression* value){
         this->value = value;
     }
-    void firstpass(){ this->type = TYPE_BOOLEAN; }
+    void secondpass(){ this->type = TYPE_BOOLEAN; }
     void genCode(struct context& context);
 private:
     Expression* value;
@@ -110,7 +112,7 @@ public:
     IntegerExpression(int integer){
         this->integer = integer;
     }
-    void firstpass(){ this->type = TYPE_INTEGER; }
+    void secondpass(){ this->type = TYPE_INTEGER; }
     void genCode(struct context& context);
 private:
     int integer;
@@ -121,7 +123,7 @@ public:
     BooleanExpression(int boolean){
         this->boolean = boolean;
     }
-    void firstpass(){ this->type = TYPE_BOOLEAN; }
+    void secondpass(){ this->type = TYPE_BOOLEAN; }
     void genCode(struct context& context);
 private:
     int boolean;
@@ -137,7 +139,7 @@ public:
         this->name = name;
         this->position = NULL;
     }
-    void firstpass();
+    void secondpass();
     void genCode(struct context& context);
     string getName(){ return name; }
     int getSize(){ return this->array?helper_getSize(name, this->type):1; }
@@ -152,7 +154,7 @@ public:
     void addName(string name){ this->name = name; }
     void addParameter(Expression* parameter);
     void genCode(struct context& context);
-    void firstpass(){ for(Expression* parameter : parameters) parameter->firstpass(); }
+    void secondpass(){ for(Expression* parameter : parameters) parameter->secondpass(); }
 private:
     string name;
     int parameter_count;
@@ -166,7 +168,6 @@ private:
 class Statement : public AST{
 public:
     virtual string genCode() = 0;
-    virtual void secondpass(){};
 };
 
 class StatementBlock : public Statement{
@@ -187,7 +188,7 @@ public:
         this->expression = expression;
     }
     string genCode();
-    void secondpass(){ expression->firstpass(); }
+    void secondpass(){ expression->secondpass(); }
 private:
     Expression* expression;
 };
@@ -229,7 +230,7 @@ public:
         this->trueBlock = trueBlock;
         this->falseBlock = falseBlock;
     }
-    void secondpass(){ condition->firstpass(); trueBlock->secondpass(); falseBlock->secondpass(); }
+    void secondpass(){ condition->secondpass(); trueBlock->secondpass(); falseBlock->secondpass(); }
     string genCode();
 private:
     Expression* condition;

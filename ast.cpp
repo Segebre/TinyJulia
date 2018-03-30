@@ -416,7 +416,7 @@ void BooleanExpression::genCode(struct context& context){
     context.is_printable = true;
 }
 
-void IdentifierExpression::firstpass(){
+void IdentifierExpression::secondpass(){
         if(current_scope == ""){
             if(!global_symbol_table.count(name)){
                 std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
@@ -439,7 +439,7 @@ void IdentifierExpression::firstpass(){
             this->array = helper_getSize(name, this->type) == 1?false:true;
             this->position = new IntegerExpression(getSize());
         }
-        this->position->firstpass();
+        this->position->secondpass();
     }
 
 void IdentifierExpression::genCode(struct context& context){
@@ -510,7 +510,7 @@ string ExpressionStatement::genCode(){
 void PrintStatement::secondpass(){ 
     for(vector<struct parameter_type>::iterator parameter = parameters.begin(); parameter != parameters.end(); parameter++)
         if(parameter->type == -1){
-            parameter->expression->firstpass();
+            parameter->expression->secondpass();
             parameter->type = parameter->expression->getType();
         }
     this->genConstantData();
@@ -673,8 +673,8 @@ string DeclareStatement::genCode(){
 }
 
 void SetStatement::secondpass(){
-    expression->firstpass();
-    position->firstpass();
+    expression->secondpass();
+    position->secondpass();
     if(current_scope == ""){
         if(!global_symbol_table.count(name)){
             std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
@@ -735,8 +735,8 @@ string SetStatement::genCode(){
 }
 
 void AssignStatement::secondpass(){
-    position->firstpass();
-    rightside->firstpass();
+    position->secondpass();
+    rightside->secondpass();
 
     switch(variant){
         case 1:{
