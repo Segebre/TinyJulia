@@ -4,7 +4,8 @@
 #define BINARYEXPRESSIONHELPER(name, valuetype)                                                                             \
     class name##Expression : public BinaryExpression{                                                                       \
     public:                                                                                                                 \
-        name##Expression(Expression* left, Expression* right) : BinaryExpression(left, right){ this->type = valuetype; }    \
+        name##Expression(Expression* left, Expression* right) : BinaryExpression(left, right){}                             \
+        void firstpass(){ left->firstpass(); right->firstpass(); this->type = valuetype; };                                 \
         void genCode(struct context& context);                                                                              \
     };
 
@@ -37,6 +38,7 @@ class Expression : public AST{
 public:
     virtual void genCode(struct context& context) = 0;
     int getType(){ return this->type; }
+    virtual void firstpass() = 0;
     virtual int getSize(){ return 1; }
 protected:
     int type;
@@ -46,7 +48,6 @@ protected:
 extern void helper_DeclareVariable(string name, int type, int size);
 extern void helper_SetVariable(string name, int type, Expression* position);
 extern int helper_UseVariable(string name);
-extern void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params);
 extern int helper_DeciferType(Expression* left, Expression* right);
 extern int helper_getSize(string name, int type);
 extern void helper_resetScope();
@@ -89,8 +90,8 @@ class NotExpression : public Expression{
 public:
     NotExpression(Expression* value){
         this->value = value;
-        this->type = value->getType();
     }
+    void firstpass(){ value->firstpass(); this->type = value->getType(); };
     void genCode(struct context& context);
 private:
     Expression* value;
@@ -100,8 +101,8 @@ class NegExpression : public Expression{
 public:
     NegExpression(Expression* value){
         this->value = value;
-        this->type = TYPE_BOOLEAN;
     }
+    void firstpass(){ this->type = TYPE_BOOLEAN; }
     void genCode(struct context& context);
 private:
     Expression* value;
@@ -111,8 +112,8 @@ class IntegerExpression : public Expression{
 public:
     IntegerExpression(int integer){
         this->integer = integer;
-        this->type = TYPE_INTEGER;
     }
+    void firstpass(){ this->type = TYPE_INTEGER; }
     void genCode(struct context& context);
 private:
     int integer;
@@ -122,8 +123,8 @@ class BooleanExpression : public Expression{
 public:
     BooleanExpression(int boolean){
         this->boolean = boolean;
-        this->type = TYPE_BOOLEAN;
     }
+    void firstpass(){ this->type = TYPE_BOOLEAN; }
     void genCode(struct context& context);
 private:
     int boolean;
@@ -132,15 +133,20 @@ private:
 class IdentifierExpression : public Expression{
 public:
     IdentifierExpression(string name, Expression* position){
-        this->type = helper_UseVariable(name);
         this->name = name;
         this->position = position;
     }
     IdentifierExpression(string name){
-        this->type = helper_UseVariable(name);
         this->name = name;
-        this->array = helper_getSize(name, this->type) == 1?false:true;
-        this->position = new IntegerExpression(array);
+        this->position = NULL;
+    }
+    void firstpass(){
+        if(position == NULL){
+            this->array = helper_getSize(name, this->type) == 1?false:true;
+            this->position = new IntegerExpression(array);
+        }
+        this->position->firstpass();
+        this->type = helper_UseVariable(name);
     }
     void genCode(struct context& context);
     string getName(){ return name; }
@@ -156,6 +162,7 @@ public:
     void addName(string name){ this->name = name; }
     void addParameter(Expression* parameter);
     void genCode(struct context& context);
+    void firstpass(){ for(Expression* parameter : parameters) parameter->firstpass(); }
 private:
     string name;
     int parameter_count;
@@ -172,11 +179,16 @@ public:
     virtual void secondpass(){};
 };
 
+extern void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params, Statement* body);
+
 class StatementBlock : public Statement{
 public:
     string genCode(){ stringstream code; for(Statement* statement : statements) code << statement->genCode() << endl; return code.str(); };
     void addStatement(Statement* statement){ statements.push_back(statement); }
-    void secondpass(){ for(Statement* statement : statements) statement->secondpass(); }
+    void secondpass(){
+        for(Statement* statement : statements)
+            statement->secondpass();
+    }
 private:
     vector<Statement*> statements;
 };
@@ -187,6 +199,7 @@ public:
         this->expression = expression;
     }
     string genCode();
+    void secondpass(){ expression->firstpass(); }
 private:
     Expression* expression;
 };
@@ -206,16 +219,18 @@ private:
 
 class FunctionStatement : public Statement{
 public:
-    FunctionStatement(string name, int type, vector<struct function_parameter>* function_params){
-        helper_DeclareFunction(name, function_params);
+    FunctionStatement(string name, int type, vector<struct function_parameter>* function_params, Statement* body){
         this->name = name;
         this->type = type;
+        this->function_params = function_params;
+        this->body = body;
     }
-    void setBody(Statement* body){ this->body = body; helper_resetScope(); }
+    void secondpass(){ helper_DeclareFunction(name, function_params, body); }
     string genCode();
 private:
     string name;
     int type;
+    vector<struct function_parameter>* function_params;
     Statement* body;
 };
 
@@ -226,7 +241,7 @@ public:
         this->trueBlock = trueBlock;
         this->falseBlock = falseBlock;
     }
-    void secondpass(){ trueBlock->secondpass(); falseBlock->secondpass(); }
+    void secondpass(){ condition->firstpass(); trueBlock->secondpass(); falseBlock->secondpass(); }
     string genCode();
 private:
     Expression* condition;
@@ -237,24 +252,26 @@ private:
 class DeclareStatement : public Statement{
 public:
     DeclareStatement(string name, int type, int size){
-        helper_DeclareVariable(name, type, size);
         this->name = name;
+        this->type = type;
         this->size = size;
     }
+    void secondpass(){ helper_DeclareVariable(name, type, size); }
     string genCode();
 private:
-    string name; //Used for comment only
+    string name;
+    int type;
     int size;
 };
 
 class SetStatement : public Statement{
 public:
     SetStatement(string name, Expression* expression, Expression* position){
-        helper_SetVariable(name, expression->getType(), position);
         this->name = name;
         this->expression = expression;
         this->position = position;
     }
+    void secondpass(){ expression->firstpass(); position->firstpass(); helper_SetVariable(name, expression->getType(), position); }
     string genCode();
 private:
     string name;

@@ -115,11 +115,23 @@ void helper_SetVariable(string name, int type, Expression* position){
 }
 
 int helper_UseVariable(string name){
-    if(!global_symbol_table.count(name)){
-        std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
-        exit(1);
+    if(current_scope == ""){
+        if(!global_symbol_table.count(name)){
+            std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+            exit(1);
+        }
+        return global_symbol_table[name].type;
     }
-    return global_symbol_table[name].type;
+    else{
+        if(local_symbol_table[current_scope].count(name))
+            return local_symbol_table[current_scope][name].type;
+        else if(global_symbol_table.count(name))
+            return global_symbol_table[name].type;
+        else{
+            std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+            exit(1);
+        }
+    }
 }
 
 bool helper_isArray(string name){
@@ -132,7 +144,7 @@ bool helper_isArray(string name){
     return false;
 }
 
-void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params){
+void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params, Statement* body){
     if(current_scope != ""){
         std::cerr << "Function declaration inside a function not allowed!" << std::endl;
         exit(1);
@@ -159,6 +171,9 @@ void helper_DeclareFunction(string name, vector<struct function_parameter>* func
     }
 
     current_scope = name;
+    body->secondpass();
+    current_scope = "";
+
 }
 
 int helper_DeciferType(Expression* left, Expression* right){
@@ -623,13 +638,14 @@ string PrintStatement::genCode(){
 }
 
 string FunctionStatement::genCode(){
-    body->secondpass();
+    current_scope = name;
     functions << name << ":" << endl
         << "\tpush ebp" << endl
         << "\tmov ebp, esp" << endl
         << body->genCode() << endl
         << "\tleave" << endl
         << "\tret" << endl;
+    current_scope = "";
     return string("");
 }
 
