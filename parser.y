@@ -79,7 +79,7 @@ statement: print { $$ = $1; }
     | condition { $$ = new ExpressionStatement($1); }
     | assign { $$ = $1; }
     | KW_IF condition optional_statements else KW_END { $$ = new IfStatement($2, $3, $4); }
-    | KW_FUNCTION IDENTIFIER PARENTHESIS_LEFT optional_function_statement_params PARENTHESIS_RIGHT DOUBLE_COLON TYPE optional_statements KW_END { $$ = new FunctionStatement(*$2, $7, $4, $8); }
+    | KW_FUNCTION IDENTIFIER PARENTHESIS_LEFT optional_function_statement_params PARENTHESIS_RIGHT DOUBLE_COLON TYPE optional_statements KW_END { $$ = new FunctionStatement(*$2, $7, $4); ((FunctionStatement*)$$)->setBody($8); }
     ;
     
 print: KW_PRINT PARENTHESIS_LEFT print_params PARENTHESIS_RIGHT { $$ = $3; ((PrintStatement*)$$)->printline(false); }

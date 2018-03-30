@@ -25,6 +25,17 @@ extern vector<string> constant_data;
 extern stringstream functions;
 extern Statement* code_tree;
 
+// #include <string>
+// #include <limits.h>
+// #include <unistd.h>
+
+// std::string getexepath()
+// {
+//   char result[ PATH_MAX ];
+//   ssize_t count = readlink( "/proc/self/exe", result, PATH_MAX );
+//   return std::string( result, (count > 0) ? count : 0 );
+// }
+
 int main(int argc, char* argv[]){
     if(argc != 2){
         cerr << "Err: Sould be: " << argv[0] << " <input_file.tjl>" << endl;
@@ -32,6 +43,7 @@ int main(int argc, char* argv[]){
     }
 
     yyin = fopen(argv[1], "r");
+    // cerr << getexepath() << endl;
     if(yyin == NULL){
         cerr << "Err: Attempt to open file '" << argv[1] << "' failed!" << endl;
         exit(1);

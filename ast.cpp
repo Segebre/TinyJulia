@@ -40,6 +40,10 @@ map<string, map<string, struct symbol> >local_symbol_table;
 map<string, int> local_esp;
 map<string, vector<struct function_parameter>*> sanity_check;
 
+void helper_resetScope(){
+    current_scope = "";
+}
+
 int helper_getSize(string name, int type){
     if(!global_symbol_table.count(name)){
         std::cerr << "ERR: Variable `" << name << "` does not exist!" << std::endl;
@@ -53,30 +57,60 @@ int helper_getSize(string name, int type){
 }
 
 void helper_DeclareVariable(string name, int type, int size){
-    if(global_symbol_table.count(name)){
-        std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
-        exit(1);
-    }
+    struct symbol symbol;
+    symbol.type = type;
+    symbol.size = size;
+    
     if(size < 1){
         std::cerr << "ERR: Size of Array cannot be less than 1!" << std::endl;
         exit(1);
     }
-    struct symbol symbol;
-    symbol.type = type;
-    symbol.position = global_esp-size*4;
-    symbol.size = size;
-    global_esp = symbol.position;
-    global_symbol_table[name] = symbol;
+    if(current_scope == ""){
+        if(global_symbol_table.count(name)){
+            std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
+            exit(1);
+        }
+        symbol.position = global_esp-size*4;
+        global_esp = symbol.position;
+        global_symbol_table[name] = symbol;
+    }
+    else{
+        if(local_symbol_table[current_scope].count(name)){
+            std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
+            exit(1);
+        }
+        symbol.position = local_esp[current_scope]-size*4;
+        local_esp[current_scope] = symbol.position;
+        local_symbol_table[current_scope][name] = symbol;
+    }
 }
 
 void helper_SetVariable(string name, int type, Expression* position){
-    if(!global_symbol_table.count(name)){
-        std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
-        exit(1);
+    if(current_scope == ""){
+        if(!global_symbol_table.count(name)){
+            std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+            exit(1);
+        }
+        else if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+            std::cerr << "ERR: Incompatible types!" << std::endl;
+            exit(1);
+        }
     }
-    if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
-        std::cerr << "ERR: Incompatible types!" << std::endl;
-        exit(1);
+    else{
+        if(!local_symbol_table[current_scope].count(name)){
+            if(!global_symbol_table.count(name)){
+                std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
+                exit(1);
+            }
+            else if(global_symbol_table[name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+                std::cerr << "ERR: Incompatible types!" << std::endl;
+                exit(1);
+            }
+        }
+        else if(local_symbol_table[current_scope][name].type == TYPE_BOOLEAN && type != TYPE_BOOLEAN){
+            std::cerr << "ERR: Incompatible types!" << std::endl;
+            exit(1);
+        }
     }
 }
 
@@ -124,6 +158,7 @@ void helper_DeclareFunction(string name, vector<struct function_parameter>* func
         local_symbol_table[name][fp.name] = symbol;
     }
 
+    current_scope = name;
 }
 
 int helper_DeciferType(Expression* left, Expression* right){
@@ -471,10 +506,19 @@ void IdentifierExpression::genCode(struct context& context){
     struct context position_context;
 
     position->genCode(position_context);
-    code << position_context.code << " ; offset ; " << position_context.comment << endl
-         << "\tpop eax" << endl
-         << "\tdec eax" << " ; position-1 for indexing from 0" << endl
-         << "\tpush dword [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+eax*4]";
+    code << position_context.code << " ; offset ; " << (position_context.is_printable?position_context.comment:"") << endl
+        << "\tpop eax" << endl
+        << "\tdec eax" << " ; position-1 for indexing from 0" << endl;
+    if(current_scope == "")
+        code << "\tpush dword [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+eax*4]";
+    else{
+        if(local_symbol_table[current_scope].count(name))
+            code << "\tpush dword [ebp" << (local_symbol_table[current_scope][name].position >= 0?"+":"") << local_symbol_table[current_scope][name].position << "+eax*4]";
+        else if(global_symbol_table.count(name)){
+            code << "\tmov ecx, [ebp] ; change of scope" << endl
+                 << "\tpush dword [ecx" << (local_symbol_table[current_scope][name].position >= 0?"+":"") << local_symbol_table[current_scope][name].position << "+eax*4]";
+        }
+    }
 
     comment << name << "[" << position_context.comment << "]";
 
@@ -578,16 +622,15 @@ string PrintStatement::genCode(){
     return code.str();
 }
 
-void FunctionStatement::secondpass(){
+string FunctionStatement::genCode(){
     body->secondpass();
-    current_scope = name;
     functions << name << ":" << endl
         << "\tpush ebp" << endl
         << "\tmov ebp, esp" << endl
         << body->genCode() << endl
         << "\tleave" << endl
         << "\tret" << endl;
-    current_scope = "";
+    return string("");
 }
 
 string IfStatement::genCode(){
@@ -629,9 +672,21 @@ string SetStatement::genCode(){
          << expression_context.code << endl
          << "\tpop eax" << " ; value ; " << expression_context.comment << endl
          << "\tpop ecx" << " ; offset ; " << position_context.comment << endl
-         << "\tdec ecx" << " ; position-1 for indexing from 0" << endl
-         << "\tmov [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+ecx*4], eax ; "
-         << name << "[" << position_context.comment << "]" << "=" << expression_context.comment << endl;
-
+         << "\tdec ecx" << " ; position-1 for indexing from 0" << endl;
+    
+    if(current_scope == ""){
+            code << "\tmov [ebp" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+ecx*4], eax ; "
+                << name << "[" << position_context.comment << "]" << "=" << expression_context.comment << endl;
+    }
+    else{
+        if(!local_symbol_table[current_scope].count(name)){
+            code << "\tmov edx, [ebp] ; scope change" << endl
+                << "\tmov [edx" << (global_symbol_table[name].position >= 0?"+":"") << global_symbol_table[name].position << "+ecx*4], eax ; "
+                << name << "[" << position_context.comment << "]" << "=" << expression_context.comment << endl;
+        }
+        else
+            code << "\tmov [ebp" << (local_symbol_table[current_scope][name].position >= 0?"+":"") << local_symbol_table[current_scope][name].position << "+ecx*4], eax ; "
+                << name << "[" << position_context.comment << "]" << "=" << expression_context.comment << endl;
+    }
     return code.str();
 }

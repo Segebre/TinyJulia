@@ -49,17 +49,7 @@ extern int helper_UseVariable(string name);
 extern void helper_DeclareFunction(string name, vector<struct function_parameter>* function_params);
 extern int helper_DeciferType(Expression* left, Expression* right);
 extern int helper_getSize(string name, int type);
-
-class FunctionExpression : public Expression{
-public:
-    void addName(string name){ this->name = name; }
-    void addParameter(Expression* parameter);
-    void genCode(struct context& context);
-private:
-    string name;
-    int parameter_count;
-    vector<Expression*> parameters;
-};
+extern void helper_resetScope();
 
 class BinaryExpression : public Expression{
 public:
@@ -161,6 +151,17 @@ private:
     bool array;
 };
 
+class FunctionExpression : public Expression{
+public:
+    void addName(string name){ this->name = name; }
+    void addParameter(Expression* parameter);
+    void genCode(struct context& context);
+private:
+    string name;
+    int parameter_count;
+    vector<Expression*> parameters;
+};
+
 ////////////////
 // Statements //
 ////////////////
@@ -192,7 +193,6 @@ private:
 
 class PrintStatement : public Statement{
 public:
-    PrintStatement(){}
     void secondpass(){ this->genConstantData(); }
     void printline(bool isprintline){ this->isprintline = isprintline; }
     void addParameter(struct parameter_type& parameter){ this->parameters.push_back(parameter); }
@@ -206,14 +206,13 @@ private:
 
 class FunctionStatement : public Statement{
 public:
-    FunctionStatement(string name, int type, vector<struct function_parameter>* function_params, Statement* body){
+    FunctionStatement(string name, int type, vector<struct function_parameter>* function_params){
         helper_DeclareFunction(name, function_params);
         this->name = name;
         this->type = type;
-        this->body = body;
     }
-    void secondpass();
-    string genCode(){ return string(""); };
+    void setBody(Statement* body){ this->body = body; helper_resetScope(); }
+    string genCode();
 private:
     string name;
     int type;
