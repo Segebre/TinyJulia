@@ -125,8 +125,8 @@ function_statement_params: function_statement_params COMA optional_newlines IDEN
     ;
 
 condition: condition_ooo_l1 { $$ = $1; }
-    | condition COMPARISON_AND optional_newlines condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonAndExpression($1, $4); }
-    | condition COMPARISON_OR optional_newlines condition_ooo_l1 { if($1->getType() != TYPE_BOOLEAN || $4->getType() != TYPE_BOOLEAN) yyerror("non-boolean used in boolean context"); $$ = new ComparisonOrExpression($1, $4); }
+    | condition COMPARISON_AND optional_newlines condition_ooo_l1 { $$ = new ComparisonAndExpression($1, $4); }
+    | condition COMPARISON_OR optional_newlines condition_ooo_l1 { $$ = new ComparisonOrExpression($1, $4); }
     ;
 
 condition_ooo_l1: expression { $$ = $1; }
@@ -169,8 +169,8 @@ expression_ooo_l5: expression_ooo_l6 { $$ = $1; }
     ;
 
 expression_ooo_l6: final_value { $$ = $1; }
-    | OPERATOR_NOT expression_ooo_l6 { if($2->getType() != TYPE_BOOLEAN) $$ = new NotExpression($2); else $$ = new NegExpression($2); }
-    | OPERATOR_NEG expression_ooo_l6 { if($2->getType() != TYPE_BOOLEAN) yyerror("Cannot negate non-boolean value!"); $$ = new NegExpression($2); }
+    | OPERATOR_NOT expression_ooo_l6 { $$ = new NNExpression($2); }
+    | OPERATOR_NEG expression_ooo_l6 { $$ = new NegExpression($2); }
     | OPERATOR_ADD expression_ooo_l6 { $$ = $2; }
     | OPERATOR_SUB expression_ooo_l6 { $$ = new MulExpression(new IntegerExpression(-1), $2); }
     ;

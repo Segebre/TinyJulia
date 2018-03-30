@@ -75,8 +75,20 @@ BINARYEXPRESSIONHELPER(EQ, TYPE_BOOLEAN);
 BINARYEXPRESSIONHELPER(GE, TYPE_BOOLEAN);
 BINARYEXPRESSIONHELPER(LE, TYPE_BOOLEAN);
 BINARYEXPRESSIONHELPER(NE, TYPE_BOOLEAN);
-BINARYEXPRESSIONHELPER(ComparisonOr, TYPE_BOOLEAN);
-BINARYEXPRESSIONHELPER(ComparisonAnd, TYPE_BOOLEAN);
+
+class ComparisonAndExpression : public BinaryExpression{
+public:
+    ComparisonAndExpression(Expression* left, Expression* right) : BinaryExpression(left, right){}
+    void secondpass();
+    void genCode(struct context& context);
+};
+
+class ComparisonOrExpression : public BinaryExpression{
+public:
+    ComparisonOrExpression(Expression* left, Expression* right) : BinaryExpression(left, right){}
+    void secondpass();
+    void genCode(struct context& context);
+};
 
 BINARYEXPRESSIONHELPER(Sal, TYPE_INTEGER);
 BINARYEXPRESSIONHELPER(Sar, TYPE_INTEGER);
@@ -90,7 +102,7 @@ public:
     NotExpression(Expression* value){
         this->value = value;
     }
-    void secondpass(){ value->secondpass(); this->type = value->getType(); };
+    void secondpass(){ this->type = value->getType(); };
     void genCode(struct context& context);
 private:
     Expression* value;
@@ -101,10 +113,22 @@ public:
     NegExpression(Expression* value){
         this->value = value;
     }
-    void secondpass(){ this->type = TYPE_BOOLEAN; }
+    void secondpass();
     void genCode(struct context& context);
 private:
     Expression* value;
+};
+
+class NNExpression : public Expression{
+public:
+    NNExpression(Expression* value){
+        this->value = value;
+    }
+    void secondpass();
+    void genCode(struct context& context){ nnexpression->genCode(context); }
+private:
+    Expression* value;
+    Expression* nnexpression;
 };
 
 class IntegerExpression : public Expression{

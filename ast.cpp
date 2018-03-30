@@ -90,6 +90,16 @@ COMPARISON(GE)
 COMPARISON(LE)
 COMPARISON(NE)
 
+void ComparisonAndExpression::secondpass(){
+    left->secondpass();
+    right->secondpass();
+    this->type = TYPE_BOOLEAN;
+    if(left->getType() != TYPE_BOOLEAN || right->getType() != TYPE_BOOLEAN){
+        std::cerr << "non-boolean used in boolean context" << std::endl;
+        exit(1);
+    }
+};
+
 void ComparisonAndExpression::genCode(struct context& context){
     struct context context_right;
     struct context context_left;
@@ -109,6 +119,16 @@ void ComparisonAndExpression::genCode(struct context& context){
     context.comment = "Comparison AND result";
     context.is_printable = false;
 }
+
+void ComparisonOrExpression::secondpass(){
+    left->secondpass();
+    right->secondpass();
+    this->type = TYPE_BOOLEAN;
+    if(left->getType() != TYPE_BOOLEAN || right->getType() != TYPE_BOOLEAN){
+        std::cerr << "non-boolean used in boolean context" << std::endl;
+        exit(1);
+    }
+};
 
 void ComparisonOrExpression::genCode(struct context& context){
     struct context context_right;
@@ -372,6 +392,23 @@ void AndExpression::genCode(struct context& context){
     context.is_printable = false;
 }
 
+void NNExpression::secondpass(){
+    value->secondpass();
+    if(value->getType() != TYPE_BOOLEAN){
+        nnexpression = new NotExpression(value);
+        nnexpression->secondpass();
+        this->type = nnexpression->getType();
+    }
+    else{
+        nnexpression = new NegExpression(value);
+        if(value->getType() != TYPE_BOOLEAN){
+            std::cerr << "Err: Cannot negate non-boolean value!" << std::endl;
+            exit(1);
+        }
+        this->type = TYPE_BOOLEAN;
+    }
+}
+
 void NotExpression::genCode(struct context& context){
     value->genCode(context);
     stringstream code;
@@ -383,6 +420,15 @@ void NotExpression::genCode(struct context& context){
     context.code = code.str();
     context.comment = "NOT result";
     context.is_printable = false;
+}
+
+void NegExpression::secondpass(){
+    value->secondpass();
+    if(value->getType() != TYPE_BOOLEAN){
+        std::cerr << "Err: Cannot negate non-boolean value!" << std::endl;
+        exit(1);
+    }
+    this->type = TYPE_BOOLEAN;
 }
 
 void NegExpression::genCode(struct context& context){
