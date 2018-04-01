@@ -1,18 +1,27 @@
 #ifndef AST_H
 #define AST_H
 
-#define BINARYEXPRESSIONHELPER(name, valuetype)                                                                             \
-    class name##Expression : public BinaryExpression{                                                                       \
-    public:                                                                                                                 \
-        name##Expression(Expression* left, Expression* right) : BinaryExpression(left, right){}                             \
-        void secondpass(){ left->secondpass(); right->secondpass(); this->type = valuetype; };                                 \
-        void genCode(struct context& context);                                                                              \
+#define BINARYEXPRESSIONHELPER(name, valuetype)                                                 \
+    class name##Expression : public BinaryExpression{                                           \
+    public:                                                                                     \
+        name##Expression(Expression* left, Expression* right) : BinaryExpression(left, right){} \
+        void secondpass(){                                                                      \
+            left->secondpass();                                                                 \
+            right->secondpass();                                                                \
+            if(left->getSize() > 1 || right->getSize() > 1){                                    \
+                cerr << "Arrays are not allowed in expressions nor conditions" << endl;         \
+                exit(1);                                                                        \
+            }                                                                                   \
+            this->type = valuetype;                                                             \
+        };                                                                                      \
+        void genCode(struct context& context);                                                  \
     };
 
 
 #include <string>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 using namespace std;
 

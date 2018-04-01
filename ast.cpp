@@ -797,10 +797,14 @@ void WhileStatement::secondpass(){
     trueBlock->secondpass();
 
     for(string temporal_variable : *temporal_variables.top()){
-        if(current_scope != "" && local_symbol_table[current_scope].count(temporal_variable))
+        if(current_scope != "" && local_symbol_table[current_scope].count(temporal_variable)){
             local_symbol_table[current_scope][temporal_variable].is_accessible = false;
-        else
+            local_esp[current_scope] += local_symbol_table[current_scope][temporal_variable].size;
+        }
+        else{
             global_symbol_table[temporal_variable].is_accessible = false;
+            global_esp += global_symbol_table[temporal_variable].size*4;
+        }
     }
     delete temporal_variables.top();
     temporal_variables.pop();
@@ -823,7 +827,8 @@ string WhileStatement::genCode(){
 
     condition->genCode(context);
 
-    code << "\tpush esp" << endl
+    code << "\tpush ebx" << endl
+         << "\tmov ebx, esp" << endl
          << "while_start_" << while_id << ":" << endl
          << context.code << " ; condition ; " << context.comment << endl
          << "\tpop eax" << endl
@@ -832,7 +837,8 @@ string WhileStatement::genCode(){
          << trueBlock->genCode() << endl
          << "\tjmp while_start_" << while_id << endl
          << "while_end_" << while_id << ":" << endl
-         << "\tpop esp" << endl;
+         << "\tmov esp, ebx" << endl
+         << "\tpop ebx" << endl;
 
     if(reset){
         current_mini_scope.type = current_mini_scope.NONE;
