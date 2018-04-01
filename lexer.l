@@ -60,9 +60,11 @@ ID [[:alpha:]_][[:alnum:]_]*
 "elseif"            { return KW_ELSEIF; }
 "else"              { return KW_ELSE; }
 "while"             { return KW_WHILE; }
+"for"               { return KW_FOR; }
 "end"               { return KW_END; }
 "function"          { return KW_FUNCTION; }
 "return"            { return KW_RETURN; }
+":"                 { return COLON; }
 "::"                { return DOUBLE_COLON; }
 "Int"               { yylval.integer = TYPE_INTEGER; return TYPE; }
 "Bool"              { yylval.integer = TYPE_BOOLEAN; return TYPE; }

@@ -204,7 +204,9 @@ public:
 class StatementBlock : public Statement{
 public:
     string genCode(){ stringstream code; for(Statement* statement : statements) code << statement->genCode() << endl; return code.str(); };
-    void addStatement(Statement* statement){ statements.push_back(statement); }
+    void addStatement(Statement* statement){
+        statements.push_back(statement);
+    }
     void secondpass(){
         for(Statement* statement : statements)
             statement->secondpass();
@@ -293,6 +295,25 @@ private:
     int while_id;
     Expression* condition;
     Statement* trueBlock;
+};
+
+class ForStatement : public Statement{
+public:
+    ForStatement(string name, Expression* from, Expression* to, Statement* trueBlock){
+        this->name = name;
+        this->from = from;
+        this->to = to;
+        this->trueBlock = trueBlock;
+    }
+    void secondpass();
+    string genCode();
+private:
+    int for_id;
+    string name;
+    Expression* from;
+    Expression* to;
+    Statement* trueBlock;
+    Statement* create_variable;
 };
 
 class DeclareStatement : public Statement{

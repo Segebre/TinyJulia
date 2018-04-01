@@ -848,6 +848,88 @@ string WhileStatement::genCode(){
     return code.str();
 }
 
+void ForStatement::secondpass(){
+    this->for_id = for_count++;
+    bool reset = false;
+
+    if(current_mini_scope.type == current_mini_scope.NONE){
+        current_mini_scope.type = current_mini_scope.FOR;
+        current_mini_scope.id = for_count;
+        reset = true;
+    }
+
+    temporal_variables.push(new vector<string>);
+    
+    from->secondpass();
+    to->secondpass();
+
+    if((current_scope != "" && !local_symbol_table[current_scope].count(name)) || !global_symbol_table.count(name))
+        create_variable = new DeclareStatement(name, TYPE_INTEGER, 1);
+    else
+        create_variable = new StatementBlock();
+
+    create_variable->secondpass();
+    trueBlock->secondpass();
+
+    for(string temporal_variable : *temporal_variables.top()){
+        if(current_scope != "" && local_symbol_table[current_scope].count(temporal_variable)){
+            local_symbol_table[current_scope][temporal_variable].is_accessible = false;
+            local_esp[current_scope] += local_symbol_table[current_scope][temporal_variable].size*4;
+        }
+        else if(global_symbol_table.count(temporal_variable)){
+            global_symbol_table[temporal_variable].is_accessible = false;
+            global_esp -= global_symbol_table[temporal_variable].size*4;
+        }
+    }
+    delete temporal_variables.top();
+    temporal_variables.pop();
+
+    if(reset){
+        current_mini_scope.type = current_mini_scope.NONE;
+        current_mini_scope.id = -1;
+    }
+}
+
+string ForStatement::genCode(){
+    stringstream code;
+    struct context from_context;
+    struct context to_context;
+
+    from->genCode(from_context);
+    to->genCode(to_context);
+
+    code << "\tpush ebx" << endl
+         << "\tmov ebx, esp" << endl
+         << from_context.code << " ; from ; " << from_context.comment << endl
+         << to_context.code << " ; to ; " << to_context.comment << endl
+         << create_variable->genCode() << endl
+         << "for_start_" << for_id << ":" << endl
+         << "\tmov eax, [ebx-4]" << endl
+         << "\tcmp eax, [ebx-8]" << endl
+         << "\tjg for_end_" << for_id << endl
+         << "\tpush dword [ebx-4]" << endl;
+    if(current_scope == ""){
+        code << "\tpop dword [ebp" << (global_symbol_table[name].position>=0?"+":"") << global_symbol_table[name].position << "]" << endl;
+    }
+    else{
+        if(local_symbol_table[current_scope].count(name))
+            code << "\tpop dword [ebp" << (local_symbol_table[current_scope][name].position>=0?"+":"") << local_symbol_table[current_scope][name].position << "]" << endl;
+        else{
+            code << "\tmov eax, [ebp]" << endl
+                 << "\tpop dword [eax" << (global_symbol_table[name].position>=0?"+":"") << global_symbol_table[name].position << "]" << endl;
+        }
+    }
+    code << trueBlock->genCode() << endl
+         << "\tinc dword [ebx-4]" << endl
+         << "\tjmp for_start_" << for_id << endl
+         << "for_end_" << for_id << ":" << endl
+         << "\tmov esp, ebx" << endl
+         << "\tpop ebx" << endl;
+
+
+    return code.str();
+}
+
 void DeclareStatement::secondpass(){
     struct symbol symbol;
     symbol.type = type;
