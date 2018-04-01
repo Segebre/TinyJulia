@@ -1,6 +1,7 @@
 #include "ast.h"
 #include <sstream>
 #include <map>
+#include <stack>
 #include <iostream>
 
 #define COMPARISON(name)                                            \
@@ -28,6 +29,7 @@ struct symbol{
     int type;
     int position;
     int size;
+    bool is_accessible;
 };
 
 struct mini_scope{
@@ -44,6 +46,8 @@ struct mini_scope{
 static int global_esp = 0;
 static string current_scope = "";
 static unsigned int if_count = 0;
+static unsigned int while_count = 0;
+static unsigned int for_count = 0;
 vector<string> constant_data;
 stringstream functions;
 map<string, struct symbol> global_symbol_table;
@@ -52,10 +56,7 @@ map<string, int> local_esp;
 map<string, vector<struct function_parameter>*> sanity_check;
 map<string, int>function_type;
 static struct mini_scope current_mini_scope = {mini_scope::NONE, 0};
-
-void helper_resetScope(){
-    current_scope = "";
-}
+stack<vector<string>*> temporal_variables;
 
 int helper_getSize(string name, int type){
     if(current_scope != ""){
@@ -477,16 +478,16 @@ void BooleanExpression::genCode(struct context& context){
 
 void IdentifierExpression::secondpass(){
         if(current_scope == ""){
-            if(!global_symbol_table.count(name)){
+            if(!global_symbol_table.count(name) || !global_symbol_table[name].is_accessible){
                 std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
                 exit(1);
             }
             type = global_symbol_table[name].type;
         }
         else{
-            if(local_symbol_table[current_scope].count(name))
+            if(local_symbol_table[current_scope].count(name) && local_symbol_table[current_scope][name].is_accessible)
                 type = local_symbol_table[current_scope][name].type;
-            else if(global_symbol_table.count(name))
+            else if(global_symbol_table.count(name) && global_symbol_table[name].is_accessible)
                 type = global_symbol_table[name].type;
             else{
                 std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
@@ -746,7 +747,7 @@ void IfStatement::secondpass(){
     
     if(reset){
         current_mini_scope.type = mini_scope::NONE;
-        current_mini_scope.id = 0;
+        current_mini_scope.id = -1;
     }
 }
 
@@ -775,9 +776,69 @@ string IfStatement::genCode(){
         
     if(reset){
         current_mini_scope.type = mini_scope::NONE;
-        current_mini_scope.id = 0;
+        current_mini_scope.id = -1;
     }
     
+    return code.str();
+}
+
+void WhileStatement::secondpass(){
+    this->while_id = while_count++;
+    bool reset = false;
+    if(current_mini_scope.type == current_mini_scope.NONE){
+        current_mini_scope.id = while_id;
+        current_mini_scope.type = current_mini_scope.WHILE;
+        reset = true;
+    }
+
+    temporal_variables.push(new vector<string>);
+
+    condition->secondpass();
+    trueBlock->secondpass();
+
+    for(string temporal_variable : *temporal_variables.top()){
+        if(current_scope != "" && local_symbol_table[current_scope].count(temporal_variable))
+            local_symbol_table[current_scope][temporal_variable].is_accessible = false;
+        else
+            global_symbol_table[temporal_variable].is_accessible = false;
+    }
+    delete temporal_variables.top();
+    temporal_variables.pop();
+
+    if(reset){
+        current_mini_scope.id = -1;
+        current_mini_scope.type = current_mini_scope.NONE;
+    }
+}
+
+string WhileStatement::genCode(){
+    stringstream code;
+    struct context context;
+    bool reset = false;
+
+    if(current_mini_scope.type == current_mini_scope.NONE){
+        current_mini_scope.type = current_mini_scope.WHILE;
+        current_mini_scope.id = while_id;
+    }
+
+    condition->genCode(context);
+
+    code << "\tpush esp" << endl
+         << "while_start_" << while_id << ":" << endl
+         << context.code << " ; condition ; " << context.comment << endl
+         << "\tpop eax" << endl
+         << "\tcmp eax, 0" << endl
+         << "\tje while_end_" << while_id << endl
+         << trueBlock->genCode() << endl
+         << "\tjmp while_start_" << while_id << endl
+         << "while_end_" << while_id << ":" << endl
+         << "\tpop esp" << endl;
+
+    if(reset){
+        current_mini_scope.type = current_mini_scope.NONE;
+        current_mini_scope.id = -1;
+    }
+
     return code.str();
 }
 
@@ -785,6 +846,7 @@ void DeclareStatement::secondpass(){
     struct symbol symbol;
     symbol.type = type;
     symbol.size = size;
+    symbol.is_accessible = true;
     
     if(size < 1){
         std::cerr << "ERR: Size of Array cannot be less than 1!" << std::endl;
@@ -812,6 +874,9 @@ void DeclareStatement::secondpass(){
         local_esp[current_scope] = symbol.position;
         local_symbol_table[current_scope][name] = symbol;
     }
+
+    if(!temporal_variables.empty())
+        temporal_variables.top()->push_back(name);
 }
 
 string DeclareStatement::genCode(){

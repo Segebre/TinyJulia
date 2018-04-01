@@ -59,6 +59,7 @@ ID [[:alpha:]_][[:alnum:]_]*
 "if"                { return KW_IF; }
 "elseif"            { return KW_ELSEIF; }
 "else"              { return KW_ELSE; }
+"while"             { return KW_WHILE; }
 "end"               { return KW_END; }
 "function"          { return KW_FUNCTION; }
 "return"            { return KW_RETURN; }

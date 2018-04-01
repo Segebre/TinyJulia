@@ -46,10 +46,8 @@ protected:
     int type;
 };
 
-extern void helper_SetVariable(string name, int type, Expression* position);
 extern int helper_DeciferType(Expression* left, Expression* right);
 extern int helper_getSize(string name, int type);
-extern void helper_resetScope();
 
 class BinaryExpression : public Expression{
 public:
@@ -272,6 +270,20 @@ private:
     Expression* condition;
     Statement* trueBlock;
     Statement* falseBlock;
+};
+
+class WhileStatement : public Statement{
+public:
+    WhileStatement(Expression* condition, Statement* trueBlock){
+        this->condition = condition;
+        this->trueBlock = trueBlock;
+    }
+    void secondpass();
+    string genCode();
+private:
+    int while_id;
+    Expression* condition;
+    Statement* trueBlock;
 };
 
 class DeclareStatement : public Statement{
