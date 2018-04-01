@@ -859,7 +859,7 @@ void DeclareStatement::secondpass(){
         exit(1);
     }
     if(current_scope == ""){
-        if(global_symbol_table.count(name)){
+        if(global_symbol_table.count(name) && global_symbol_table[name].is_accessible){
             std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
             exit(1);
         }
@@ -868,11 +868,11 @@ void DeclareStatement::secondpass(){
         global_symbol_table[name] = symbol;
     }
     else{
-        if(local_symbol_table[current_scope].count(name)){
+        if(local_symbol_table[current_scope].count(name) && local_symbol_table[current_scope][name].is_accessible){
             std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
             exit(1);
         }
-        else if(global_symbol_table.count(name)){
+        else if(global_symbol_table.count(name) && global_symbol_table[name].is_accessible){
             std::cerr << "ERR: Variable redeclaration not allowed!" << std::endl;
             exit(1);
         }
@@ -895,7 +895,7 @@ void SetStatement::secondpass(){
     expression->secondpass();
     position->secondpass();
     if(current_scope == ""){
-        if(!global_symbol_table.count(name)){
+        if(!global_symbol_table.count(name) || !global_symbol_table[name].is_accessible){
             std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
             exit(1);
         }
@@ -905,7 +905,7 @@ void SetStatement::secondpass(){
         }
     }
     else{
-        if(!local_symbol_table[current_scope].count(name)){
+        if(!local_symbol_table[current_scope].count(name) || !local_symbol_table[current_scope][name].is_accessible){
             if(!global_symbol_table.count(name)){
                 std::cerr << "ERR: Variable `" << name << "` was first used before its declaration!" << std::endl;
                 exit(1);
