@@ -53,8 +53,10 @@ stringstream functions;
 map<string, struct symbol> global_symbol_table;
 map<string, map<string, struct symbol> >local_symbol_table;
 map<string, int> local_esp;
-map<string, vector<struct function_parameter>*> sanity_check;
+map<string, vector<vector<struct function_parameter>*> > sanity_check;
 map<string, int>function_type;
+// map<string, vector<struct function_parameter>*> sanity_check;
+// map<string, int>function_type;
 static struct mini_scope current_mini_scope = {mini_scope::NONE, 0};
 stack<vector<string>*> temporal_variables;
 
@@ -533,23 +535,68 @@ void IdentifierExpression::genCode(struct context& context){
     for(Expression* parameter : parameters)
         parameter->secondpass();
 
-    if(sanity_check[name]->size() != parameters.size()){
-        std::cerr << "ERR: Expected " << sanity_check[name]->size() << " parameter(s) but found " << parameters.size() << std::endl;
+    // if(sanity_check[name]->size() != parameters.size()){
+    //     std::cerr << "ERR: Expected " << sanity_check[name]->size() << " parameter(s) but found " << parameters.size() << std::endl;
+    //     exit(1);
+    // }
+
+    // for(int index = 0; index < sanity_check[name]->size(); index++){
+    //     if(((*sanity_check[name])[index].type == TYPE_BOOLEAN) && (parameters[index]->getType() != TYPE_BOOLEAN)){
+    //         std::cerr << "ERR: Incompatible types on parameter `" << (*sanity_check[name])[index].name << "`" << std::endl;
+    //         exit(1);
+    //     }
+    //     else if(parameters[index]->getSize() != (*sanity_check[name])[index].size){
+    //         int temp = parameters[index]->getSize();
+    //         temp = (*sanity_check[name])[index].size;
+    //         std::cerr << "ERR: Incompatible sizes on parameter `" << (*sanity_check[name])[index].name << "`, expected " << (*sanity_check[name])[index].size << " found " << parameters[index]->getSize() << std::endl;
+    //         exit(1);
+    //     }
+    // }
+
+    // for(vector<struct function_parameter>* function_metadata : sanity_check[name]){
+    //     for(struct function_parameter md_fp : *function_metadata){
+    //         bool equal = true;
+    //         for(Expression* fp : parameters){
+    //             if(md_fp.type != fp->getType()){
+    //                 equal = false;
+    //                 break;
+    //             }
+    //         }
+    //         if(equal){
+    //             std::cerr << "Err:" << name << ": Function redeclaration not allowed!" << std::endl;
+    //             exit(1);
+    //         }
+    //     }
+    // }
+
+    int is_exist = false;
+    for(vector<struct function_parameter>* function_metadata : sanity_check[name]){
+        if(function_metadata->size() != parameters.size())
+            continue;
+        for(int i = 0; i < parameters.size(); i++){
+            if(function_metadata->at(i).type != parameters[i]->getType()){
+                is_exist = false;
+                break;
+            }
+            else
+                is_exist = true;
+        }
+        if(is_exist)
+            break;
+    }
+
+    if(!is_exist){
+        cerr << "No matching function for `" << name << "` was declared!" << endl;
         exit(1);
     }
 
-    for(int index = 0; index < sanity_check[name]->size(); index++){
-        if(((*sanity_check[name])[index].type == TYPE_BOOLEAN) && (parameters[index]->getType() != TYPE_BOOLEAN)){
-            std::cerr << "ERR: Incompatible types on parameter `" << (*sanity_check[name])[index].name << "`" << std::endl;
-            exit(1);
-        }
-        else if(parameters[index]->getSize() != (*sanity_check[name])[index].size){
-            int temp = parameters[index]->getSize();
-            temp = (*sanity_check[name])[index].size;
-            std::cerr << "ERR: Incompatible sizes on parameter `" << (*sanity_check[name])[index].name << "`, expected " << (*sanity_check[name])[index].size << " found " << parameters[index]->getSize() << std::endl;
-            exit(1);
-        }
-    }
+    // name += "(";
+    for(vector<Expression*>::iterator fp = parameters.begin(); fp != parameters.end(); fp++)//{
+        name += ((*fp)->getType() == TYPE_INTEGER?"Int":"Bool");
+    //     if(++fp != parameters.end())
+    //         name += ", ";
+    // }
+    // name += ")";
 
     type = function_type[name];
 }
@@ -662,16 +709,51 @@ void FunctionStatement::secondpass(){
         std::cerr << "Variable with this name already exists!" << std::endl;
         exit(1);
     }
-    if(local_symbol_table.count(name)){
-        std::cerr << "Function redeclaration not allowed!" << std::endl;
-        exit(1);
+
+    // for(vector<struct function_parameter>* function_metadata : sanity_check[name]){
+    //     for(struct function_parameter md_fp : *function_metadata){
+    //         bool repeated = true;
+    //         for(struct function_parameter fp : *function_params){
+    //             if(md_fp.type != fp.type){
+    //                 repeated = false;
+    //                 break;
+    //             }
+    //         }
+    //         if(repeated){
+    //             std::cerr << "Err:" << name << ": Function redeclaration not allowed!" << std::endl;
+    //             exit(1);
+    //         }
+    //     }
+    // }
+
+    for(vector<struct function_parameter>* function_metadata : sanity_check[name]){
+        bool repeated = true;
+        if(function_metadata->size() != function_params->size())
+            continue;
+        for(int i = 0; i < function_params->size(); i++){
+            if(function_params->at(i).type != function_metadata->at(i).type){
+                repeated = false;
+                break;
+            }
+        }
+        if(repeated){
+            std::cerr << "Err:" << name << ": Function redeclaration not allowed!" << std::endl;
+            exit(1);
+        }
     }
 
-    sanity_check[name] = function_params;
-    function_type[name] = type;
+    sanity_check[name].push_back(function_params);
+
+    for(struct function_parameter fp : *function_params)
+        name += (fp.type == TYPE_INTEGER?"Int":"Bool");
+    
+    function_type[name] = type;;
+    // sanity_check[name] = function_params;
+    // function_type[name] = type;
+
 
     int offset = 8;
-    for(function_parameter fp : *function_params){
+    for(struct function_parameter fp : *function_params){
         if(local_symbol_table[name].count(fp.name)){
             std::cerr << "Err: Found repeated parameter names on function declaration!" << std::endl;
             exit(1);
@@ -680,6 +762,7 @@ void FunctionStatement::secondpass(){
         symbol.type = fp.type;
         symbol.position = offset;
         symbol.size = fp.size;
+        symbol.is_accessible = true;
         offset += symbol.size*4;
         local_symbol_table[name][fp.name] = symbol;
     }
