@@ -1120,7 +1120,7 @@ string SetStatement::genCode(){
 
 void AssignStatement::secondpass(){
     position->secondpass();
-    rightside->secondpass();
+    // rightside->secondpass();
 
     switch(variant){
         case 1:{
